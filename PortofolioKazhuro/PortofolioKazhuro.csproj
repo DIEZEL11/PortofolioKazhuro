@@ -7,4 +7,9 @@
     <UserSecretsId>fc77bd60-9e38-4006-9e76-e867eb4c44c5</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.SQLite" Version="6.0.0" />
+  </ItemGroup>
+
 </Project>

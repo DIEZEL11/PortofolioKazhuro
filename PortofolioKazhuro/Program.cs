@@ -1,4 +1,17 @@
+using Serilog;
+
 var builder = WebApplication.CreateBuilder(args);
+// Получаем строку подключения к SQLite
+var sqliteConnectionString = builder.Configuration.GetConnectionString("LogDb") ?? "Data Source=log.db;";
+
+// Настройка Serilog для записи логов в SQLite
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.SQLite(sqliteConnectionString, tableName: "Logs", batchSize: 1)
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
