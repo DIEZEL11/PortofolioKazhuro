@@ -1,21 +1,40 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using PortofolioKazhuro.Context;
 using PortofolioKazhuro.Models;
+using PortofolioKazhuro.ViewModel;
+using System.Diagnostics;
 
 namespace PortofolioKazhuro.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly PortfolioContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, PortfolioContext context)
         {
+            _context = context;
+
+
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+              var model = new AdminViewModel
+            {
+                Profile = await _context.Profiles.FirstAsync(),
+                educations = await _context.educations.ToListAsync(),
+                Projects = await _context.Projects.ToListAsync(),
+                Skills = await _context.Skills.ToListAsync(),
+                Certificates = await _context.Certificates.ToListAsync(),
+                experiences = await _context.Experiences.ToListAsync(),
+                visitorStats = await _context.VisitorStats.ToListAsync(),
+
+
+            };
+            return View(model);
         }
 
         public IActionResult Privacy()

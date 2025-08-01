@@ -1,0 +1,433 @@
+﻿@using PortofolioKazhuro.ViewModel
+@model AdminViewModel
+
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+
+@{
+    ViewData["Title"] = "Админская панель";
+    Layout = "_Layout";
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 fw-bold text-primary"><i class="fas fa-tools me-2"></i>@ViewData["Title"]</h1>
+        <a asp-controller="Home"
+           asp-action="Index"
+           class="btn btn-outline-primary shadow-sm">
+            <i class="fas fa-home me-1"></i>Публичная страница
+        </a>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="card mb-5 shadow-lg border-0 rounded-4">
+        <div class="card-header bg-gradient bg-primary text-white rounded-top-4">
+            <h5 class="mb-0"><i class="fas fa-user me-2"></i>Профиль пользователя</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="UpdateProfile"
+                  method="post"
+                  enctype="multipart/form-data"
+                  novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Profile.Id" />
+                <div class="row g-4 align-items-stretch">
+                    <!-- Фото -->
+                    <div class="col-12 col-md-4 d-flex flex-column align-items-center justify-content-start">
+                        @if (Model.Profile.PhotoData != null)
+                        {
+                            var base64 = Convert.ToBase64String(Model.Profile.PhotoData);
+                            var imgSrc = $"data:{Model.Profile.PhotoMimeType};base64,{base64}";
+                            <img src="@imgSrc"
+                                 class="rounded-circle border border-3 border-primary shadow mb-3"
+                                 style="width:180px; height:180px; object-fit:cover; background:#f8f9fa;"
+                                 alt="Фото профиля" />
+                        }
+                        else
+                        {
+                            <div class="rounded-circle border border-3 border-secondary d-flex align-items-center justify-content-center mb-3"
+                                 style="width:180px; height:180px; background:#f8f9fa;">
+                                <span class="text-muted fs-5">Нет фото</span>
+                            </div>
+                        }
+                        <label asp-for="PhotoFile" class="btn btn-outline-secondary w-75 shadow-sm">
+                            <i class="fas fa-upload me-1"></i> Загрузить фото
+                            <input asp-for="PhotoFile" type="file" accept="image/*" class="d-none" />
+                        </label>
+                    </div>
+
+                    <!-- Данные профиля -->
+                    <div class="col-12 col-md-8 h-100">
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6 form-floating mb-2">
+                                <input asp-for="Profile.Name" class="form-control" placeholder="Имя" />
+                                <label asp-for="Profile.Name">Имя</label>
+                            </div>
+                            <div class="col-12 col-md-6 form-floating mb-2">
+                                <input asp-for="Profile.Surname" class="form-control" placeholder="Фамилия" />
+                                <label asp-for="Profile.Surname">Фамилия</label>
+                            </div>
+                            <div class="col-12 col-md-6 form-floating mb-2">
+                                <input asp-for="Profile.Patronymic" class="form-control" placeholder="Отчество" />
+                                <label asp-for="Profile.Patronymic">Отчество</label>
+                            </div>
+                            <div class="col-12 col-md-6 form-floating mb-2">
+                                <input asp-for="Profile.Email" class="form-control" placeholder="Email" />
+                                <label asp-for="Profile.Email">Email</label>
+                            </div>
+                            <div class="row g-3 mb-2">
+                                <div class="col-6 col-md-3">
+                                    <div class="input-group has-validation">
+                                        <span class="input-group-text"><i class="fab fa-github"></i></span>
+                                        <input asp-for="Profile.GitHubUrl"
+                                               class="form-control"
+                                               placeholder="GitHub" />
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="input-group has-validation">
+                                        <span class="input-group-text"><i class="fas fa-code"></i></span>
+                                        <input asp-for="Profile.LeetCodeUrl"
+                                               class="form-control"
+                                               placeholder="LeetCode" />
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="input-group has-validation">
+                                        <span class="input-group-text"><i class="fab fa-linkedin"></i></span>
+                                        <input asp-for="Profile.LinkedinUrl"
+                                               class="form-control"
+                                               placeholder="LinkedIn" />
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="input-group has-validation">
+                                        <span class="input-group-text"><i class="fab fa-telegram"></i></span>
+                                        <input asp-for="Profile.TelegramUrl"
+                                               class="form-control"
+                                               placeholder="Telegram" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 form-floating mb-2">
+                                <textarea asp-for="Profile.About"
+                                          class="form-control"
+                                          placeholder="О себе"
+                                          style="min-height: 70px"></textarea>
+                                <label asp-for="Profile.About">О себе</label>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            <button type="submit"
+                                    class="btn btn-lg btn-primary shadow"
+                                    data-bs-toggle="tooltip"
+                                    title="Сохранить изменения профиля">
+                                <i class="fas fa-save me-2"></i>
+                                Сохранить профиль
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDUCATION -->
+    <div class="card mb-4 shadow-sm border-0 rounded-4">
+        <div class="card-header d-flex justify-content-between bg-light rounded-top-4">
+            <span class="fw-semibold"><i class="fas fa-graduation-cap me-2 text-primary"></i>Образование</span>
+            <button class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#eduForm">
+                <i class="fas fa-plus"></i> Добавить
+            </button>
+        </div>
+        <div class="collapse" id="eduForm">
+            <div class="card-body border-top">
+                <form asp-action="AddEducation" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-6">
+                        <input name="name" class="form-control" placeholder="Учебное заведение" />
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="DateStart" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="DateEnd" class="form-control" />
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-success">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Начало</th>
+                        <th>Окончание</th>
+                        <th style="width:140px">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var edu in Model.educations)
+                    {
+                        <tr>
+                            <td>@edu.name</td>
+                            <td>@edu.DateStart?.ToString("yyyy-MM-dd")</td>
+                            <td>@edu.DateEnd?.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                <form asp-action="EditEducation" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@edu.id" />
+                                    <button class="btn btn-sm btn-outline-primary">Ред.</button>
+                                </form>
+                                <form asp-action="DeleteEducation" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@edu.id" />
+                                    <button class="btn btn-sm btn-outline-danger">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="card mb-4 shadow-sm border-0 rounded-4">
+        <div class="card-header d-flex justify-content-between bg-light rounded-top-4">
+            <span class="fw-semibold"><i class="fas fa-project-diagram me-2 text-primary"></i>Проекты</span>
+            <button class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#projForm">
+                <i class="fas fa-plus"></i> Добавить
+            </button>
+        </div>
+        <div class="collapse" id="projForm">
+            <div class="card-body border-top">
+                <form asp-action="AddProject" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-4">
+                        <input name="Title" class="form-control" placeholder="Название проекта" />
+                    </div>
+                    <div class="col-md-4">
+                        <input name="GitHubUrl" class="form-control" placeholder="URL GitHub" />
+                    </div>
+                    <div class="col-md-4">
+                        <input name="Description" class="form-control" placeholder="Описание" />
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-success">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>Проект</th>
+                        <th>Описание</th>
+                        <th>GitHub</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Projects)
+                    {
+                        <tr>
+                            <td>@p.Title</td>
+                            <td>@p.Description</td>
+                            <td><a href="@p.GitHubUrl" target="_blank" class="btn btn-sm btn-outline-dark"><i class="fab fa-github"></i> GitHub</a></td>
+                            <td>
+                                <form asp-action="EditProject" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <button class="btn btn-sm btn-outline-primary">Ред.</button>
+                                </form>
+                                <form asp-action="DeleteProject" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <button class="btn btn-sm btn-outline-danger">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SKILLS, CERTIFICATES, EXPERIENCE -->
+    <div class="row mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-header d-flex justify-content-between bg-light rounded-top-4">
+                    <span class="fw-semibold"><i class="fas fa-lightbulb me-2 text-primary"></i>Навыки</span>
+                    <button class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#skillForm">+</button>
+                </div>
+                <div class="collapse" id="skillForm">
+                    <div class="card-body border-top">
+                        <form asp-action="AddSkill" method="post" class="input-group">
+                            @Html.AntiForgeryToken()
+                            <input name="Name" class="form-control" placeholder="Новый навык" />
+                            <button class="btn btn-success">Добавить</button>
+                        </form>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var s in Model.Skills)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            @s.Name
+                            <form asp-action="DeleteSkill" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@s.Id" />
+                                <button class="btn btn-sm btn-outline-danger">×</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-header d-flex justify-content-between bg-light rounded-top-4">
+                    <span class="fw-semibold"><i class="fas fa-certificate me-2 text-primary"></i>Сертификаты</span>
+                    <button class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#certForm">+</button>
+                </div>
+                <div class="collapse" id="certForm">
+                    <div class="card-body border-top">
+                        <form asp-action="AddCertificate" method="post" class="input-group">
+                            @Html.AntiForgeryToken()
+                            <input name="Name" class="form-control" placeholder="Новый сертификат" />
+                            <button class="btn btn-success">Добавить</button>
+                        </form>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var c in Model.Certificates)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            @c.Name
+                            <form asp-action="DeleteCertificate" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@c.Id" />
+                                <button class="btn btn-sm btn-outline-danger">×</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="card h-100 shadow-sm border-0 rounded-4">
+                <div class="card-header d-flex justify-content-between bg-light rounded-top-4">
+                    <span class="fw-semibold"><i class="fas fa-briefcase me-2 text-primary"></i>Опыт работы</span>
+                    <button class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#expForm">+</button>
+                </div>
+                <div class="collapse" id="expForm">
+                    <div class="card-body border-top">
+                        <form asp-action="AddExperience" method="post">
+                            @Html.AntiForgeryToken()
+                            <textarea name="Description" class="form-control mb-2" rows="2" placeholder="Описание опыта"></textarea>
+                            <button class="btn btn-success">Добавить</button>
+                        </form>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var e in Model.experiences)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            @e.Description
+                            <form asp-action="DeleteExperience" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@e.Id" />
+                                <button class="btn btn-sm btn-outline-danger">×</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISITOR STATS -->
+    <div class="card mb-4 shadow-sm border-0 rounded-4">
+        <div class="card-header bg-light rounded-top-4">
+            <span class="fw-semibold"><i class="fas fa-users me-2 text-primary"></i>Статистика посетителей</span>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-sm table-striped mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>IP-адрес</th>
+                        <th>Время визита</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var vs in Model.visitorStats)
+                    {
+                        <tr>
+                            <td>@vs.IpAddress</td>
+                            <td>@vs.VisitTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SYSTEM LOGS -->
+   
+</div>
+<!-- SYSTEM LOGS -->
+<div class="card mb-4 shadow-sm border-0 rounded-4">
+    <div class="card-header d-flex justify-content-between align-items-center bg-light rounded-top-4">
+        <span class="fw-semibold"><i class="fas fa-clipboard-list me-2 text-primary"></i>Логи системы</span>
+        <form method="get" class="d-flex">
+            <select name="logLevel" class="form-select form-select-sm me-2">
+                @{
+                    var selectedLogLevel = HttpContextAccessor.HttpContext?.Request.Query["logLevel"].ToString();
+                }
+                <option value="">Все</option>
+                <option value="Info" selected="@(selectedLogLevel == "Info" ? "selected" : null)">Info</option>
+                <option value="Warning" selected="@(selectedLogLevel == "Warning" ? "selected" : null)">Warning</option>
+                <option value="Error" selected="@(selectedLogLevel == "Error" ? "selected" : null)">Error</option>
+                <option value="Debug" selected="@(selectedLogLevel == "Debug" ? "selected" : null)">Debug</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Применить</button>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-striped mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Время</th>
+                    <th>Уровень</th>
+                    <th>Сообщение</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var log in Model.Logs)
+                {
+                    <tr>
+                        <td>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@log.Level</td>
+                        <td>@log.Exception</td>
+                        <td>@log.RenderedMessage</td>
+                        <td>@log.Properties</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,8 +1,8 @@
 ﻿namespace PortofolioKazhuro.Models
 {
-    public class Experience
+    public class Certificate
     {
         public int Id { get; set; }
-        public string Description { get; set; } = default!;
+        public string Name { get; set; }
     }
 }

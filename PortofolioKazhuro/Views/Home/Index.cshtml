@@ -1,96 +1,75 @@
-﻿@{
-    ViewData["Title"] = "Портфолио";
+﻿@using PortofolioKazhuro.ViewModel
+@model AdminViewModel
+
+@{
+    ViewData["Title"] = "Обо мне";
 }
 
-<div class="container mt-5">
-    <div class="row align-items-center">
-        <div class="col-md-4 text-center">
-            <img src="https://www.dreamstime.com/portrait-black-man-as-computer-programmer-looking-camera-writing-code-office-workplace-software-developer-smiling-image259368462" alt="Фото разработчика" class="img-fluid rounded-circle shadow" style="max-width: 250px;">
+<h1>@Model.Profile.Name</h1>
+
+@* <img src="@Model.Profile" alt="Фото профиля" width="150" /> *@
+
+<p>@Model.Profile.About</p>
+
+<p>
+    Email: <a href="mailto:@Model.Profile.Email">@Model.Profile.Email</a><br />
+    GitHub: <a href="@Model.Profile.GitHubUrl" target="_blank">@Model.Profile.GitHubUrl</a><br />
+    LeetCode: <a href="@Model.Profile.LeetCodeUrl" target="_blank">@Model.Profile.LeetCodeUrl</a>
+</p>
+
+<hr />
+
+<h2>Навыки</h2>
+<ul>
+    @foreach (var skill in Model.Skills)
+    {
+        <li>@skill.Name</li>
+    }
+</ul>
+
+<hr />
+
+<h2>Образование</h2>
+<ul>
+    @foreach (var edu in Model.educations)
+    {
+        <li>
+            <strong>@edu.name</strong>
+            (@edu.DateStart?.ToString("yyyy") – @edu.DateEnd?.ToString("yyyy"))
+        </li>
+    }
+</ul>
+
+<hr />
+
+<h2>Проекты</h2>
+<div>
+    @foreach (var project in Model.Projects)
+    {
+        <div style="margin-bottom:1em;">
+            <h3>@project.Title</h3>
+            <p>@project.Description</p>
+            <p><a href="@project.GitHubUrl" target="_blank">Исходники на GitHub</a></p>
         </div>
-        <div class="col-md-8">
-            <h1 class="display-4">Казуро Иван</h1>
-            <p><strong>Образование:</strong> Бакалавр компьютерных наук, МГУ, 2023</p>
-            <p><strong>Опыт:</strong> 2 года коммерческой разработки веб-приложений на ASP.NET Core</p>
-            <p>
-                <a href="https://github.com/DIEZEL11" target="_blank" class="btn btn-outline-dark m-1">GitHub</a>
-                <a href="https://leetcode.com/your-leetcode" target="_blank" class="btn btn-outline-success m-1">LeetCode</a>
-            </p>
-        </div>
-    </div>
-
-    <hr class="my-4">
-
-    <h3 class="text-center">Навыки</h3>
-    <ul class="list-group list-group-flush mb-4">
-        <li class="list-group-item">C#, .NET, ASP.NET Core Razor Pages</li>
-        <li class="list-group-item">SQL, Entity Framework</li>
-        <li class="list-group-item">JavaScript, HTML, CSS</li>
-        <li class="list-group-item">Git, Linux, Docker</li>
-        <li class="list-group-item">REST API, Postman, Swagger</li>
-        <li class="list-group-item">Unit-тестирование, xUnit</li>
-    </ul>
-
-    <h3 class="text-center">Обо мне</h3>
-    <p class="lead text-center">
-        Увлекаюсь разработкой веб-приложений, алгоритмами и решением сложных задач.<br />
-        Люблю чистый код, архитектуру и постоянное развитие.<br />
-        Открыт к новым проектам и сотрудничеству.
-    </p>
-
-    <div class="text-center mt-4">
-        <a href="mailto:ivan.kazuro@example.com" class="btn btn-primary">Связаться со мной</a>
-    </div>
-    <hr class="my-5">
-
-    <h3 class="text-center">Проекты</h3>
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">TaskManager Pro</h5>
-                    <p class="card-text">Веб-приложение для управления задачами с авторизацией, ролями и REST API. ASP.NET Core + EF Core.</p>
-                    <a href="https://github.com/DIEZEL11/TaskManagerPro" target="_blank" class="btn btn-outline-primary">GitHub</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">WeatherApp</h5>
-                    <p class="card-text">Приложение для отображения прогноза погоды с использованием внешнего API. Razor Pages + JS.</p>
-                    <a href="https://github.com/DIEZEL11/WeatherApp" target="_blank" class="btn btn-outline-primary">GitHub</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <hr class="my-5">
-
-    <h3 class="text-center">Сертификаты</h3>
-    <ul class="list-group list-group-flush mb-4">
-        <li class="list-group-item">Microsoft Certified: Azure Fundamentals</li>
-        <li class="list-group-item">freeCodeCamp: Responsive Web Design</li>
-        <li class="list-group-item">Coursera: Object-Oriented Programming in C#</li>
-    </ul>
-
-    <hr class="my-5">
-
-    <h3 class="text-center">Отзывы</h3>
-    <div class="card mb-3 shadow-sm">
-        <div class="card-body">
-            <blockquote class="blockquote mb-0">
-                <p>«Иван — настоящий профессионал. Его подход к архитектуре и вниманию к деталям впечатляет. Работать с ним — удовольствие!»</p>
-                <footer class="blockquote-footer">Алексей Смирнов, тимлид в TechNova</footer>
-            </blockquote>
-        </div>
-    </div>
-    <div class="card mb-3 shadow-sm">
-        <div class="card-body">
-            <blockquote class="blockquote mb-0">
-                <p>«Быстро, качественно и с отличной коммуникацией. Иван помог нам запустить MVP за 3 недели!»</p>
-                <footer class="blockquote-footer">Мария Козлова, CEO стартапа FinTrack</footer>
-            </blockquote>
-        </div>
-    </div>
-
+    }
 </div>
+
+<hr />
+
+<h2>Сертификаты</h2>
+<ul>
+    @foreach (var cert in Model.Certificates)
+    {
+        <li>@cert.Name</li>
+    }
+</ul>
+
+<hr />
+
+<h2>Опыт работы</h2>
+<ul>
+    @foreach (var exp in Model.experiences)
+    {
+        <li>@exp.Description</li>
+    }
+</ul>

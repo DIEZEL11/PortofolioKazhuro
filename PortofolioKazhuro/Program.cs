@@ -1,42 +1,79 @@
+﻿using Microsoft.EntityFrameworkCore;
+using PortofolioKazhuro.Context;
 using Serilog;
+using Serilog.Events;
 
-var builder = WebApplication.CreateBuilder(args);
-// �������� ������ ����������� � SQLite
-var sqliteConnectionString = builder.Configuration.GetConnectionString("LogDb") ?? "Data Source=log.db;";
-
-// ��������� Serilog ��� ������ ����� � SQLite
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.SQLite(sqliteConnectionString, tableName: "Logs", batchSize: 1)
-    .Enrich.FromLogContext()
-    .CreateLogger();
-
-builder.Host.UseSerilog();
-
-
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-builder.WebHost.UseUrls("https://0.0.0.0:6688");
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+try
 {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    var builder = WebApplication.CreateBuilder(args);
+
+    // 👇 Формируем путь к файлу БД и подключаем её
+    var dbFileName = "portfolio.db";
+    var dbPath = Path.Combine(AppContext.BaseDirectory, dbFileName);
+    var connectionString = $"Data Source={dbPath}";
+    builder.Services.AddDbContext<PortfolioContext>(options =>
+        options.UseSqlite(connectionString));
+
+    // 👇 Настройка Serilog
+    Log.Logger = new LoggerConfiguration()
+        .MinimumLevel.Information()
+        .Enrich.FromLogContext()
+        .WriteTo.Console()
+        .WriteTo.SQLite(
+            sqliteDbPath: dbPath,
+            tableName: "Logs",
+            batchSize: 1)
+        .Filter.ByExcluding(logEvent =>
+            logEvent.Properties.ContainsKey("SourceContext") &&
+            (
+                logEvent.Properties["SourceContext"].ToString().StartsWith("\"Microsoft") ||
+                logEvent.Properties["SourceContext"].ToString().StartsWith("\"System")
+            )
+        ).CreateLogger();
+
+    builder.Host.UseSerilog();
+
+    Log.Information("Старт приложения");
+
+    // 👇 Регистрация сервисов
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddControllersWithViews();
+
+    var app = builder.Build();
+
+    // 👇 Конфигурация пайплайна
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Home/Error");
+        app.UseHsts();
+    }
+
+    app.UseHttpsRedirection();
+    app.UseRouting();
+    app.UseAuthorization();
+
+    app.MapStaticAssets();
+
+    // 👇 Маршруты
+    app.MapControllerRoute(
+        name: "admin",
+        pattern: "{controller=Admin}/{action=Index}/{id?}")
+        .WithStaticAssets();
+
+    app.MapControllerRoute(
+        name: "home",
+        pattern: "{controller=Home}/{action=Index}/{id?}")
+        .WithStaticAssets();
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-app.UseRouting();
-
-app.UseAuthorization();
-
-app.MapStaticAssets();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
-
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Error(ex, "Ошибка при запуске приложения");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+// Этот код запускает приложение ASP.NET Core с использованием Serilog для логирования и SQLite в качестве базы данных.
