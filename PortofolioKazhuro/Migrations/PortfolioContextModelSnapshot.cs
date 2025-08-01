@@ -96,6 +96,10 @@ namespace PortofolioKazhuro.Migrations
                     b.Property<string>("Patronymic")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(13)
+                        .HasColumnType("TEXT");
+
                     b.Property<byte[]>("PhotoData")
                         .HasColumnType("BLOB");
 

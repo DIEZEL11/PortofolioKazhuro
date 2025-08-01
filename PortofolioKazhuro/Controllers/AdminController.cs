@@ -1,6 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using PortofolioKazhuro.Context;
 using PortofolioKazhuro.Models;
@@ -26,70 +25,83 @@ namespace PortofolioKazhuro.Controllers
         {
             _logger.LogInformation("Загрузка данных для админской панели");
 
-            var model = new AdminViewModel
-            {
-                Profile = await _context.Profiles.FirstOrDefaultAsync(),
-                educations = await _context.educations.ToListAsync(),
-                Projects = await _context.Projects.ToListAsync(),
-                Skills = await _context.Skills.ToListAsync(),
-                Certificates = await _context.Certificates.ToListAsync(),
-                experiences = await _context.Experiences.ToListAsync(),
-                visitorStats = await _context.VisitorStats.ToListAsync(),
-              
-            };
-            if(model.Profile == null)
-            {
-                _logger.LogWarning("Профиль не найден, создайте профиль в базе данных");
-                model.Profile = new Profile();
-                TempData["ErrorMessage"] = "Профиль не найден. Пожалуйста, создайте профиль в базе данных.";
-                //return RedirectToAction("CreateProfile", "Profile");
-            }
-            // Получение строки подключения
-            var configuration = HttpContext.RequestServices.GetService<IConfiguration>();
-            var sqliteConnectionString = configuration.GetConnectionString("DefaultConnection") ?? "Data Source=log.db;";
+            // 1. Получаем профиль и остальные справочники
+            var profile = await _context.Profiles.FirstOrDefaultAsync();
+            var educations = await _context.educations.ToListAsync();
+            var projects = await _context.Projects.ToListAsync();
+            var skills = await _context.Skills.ToListAsync();
+            var certificates = await _context.Certificates.ToListAsync();
+            var experiences = await _context.Experiences.ToListAsync();
 
-            // Получение строки подключения для логов
-            var logDbPath = Path.Combine(AppContext.BaseDirectory, "logs.db");
-            var logConnectionString = $"Data Source={logDbPath}";
-
-            // Считываем логи из отдельной БД SQLite
-            var logs = new List<Logs>();
-            using (var connection = new SqliteConnection(logConnectionString))
-            {
-                await connection.OpenAsync();
-                using (var command = connection.CreateCommand())
+            // 2. Группируем статистику по IP
+            var allVisits = _context.VisitorStats.AsNoTracking();
+            var groups = await allVisits
+                .GroupBy(v => v.IpAddress)
+                .Select(g => new VisitorStatGroup
                 {
-                    if (string.IsNullOrEmpty(logLevel))
-                    {
-                        command.CommandText = "SELECT Timestamp, Level, Exception, RenderedMessage, Properties FROM Logs ORDER BY Timestamp DESC LIMIT 100";
-                    }
-                    else
-                    {
-                        command.CommandText = "SELECT Timestamp, Level, Exception, RenderedMessage, Properties FROM Logs WHERE Level = $level ORDER BY Timestamp DESC LIMIT 100";
-                        command.Parameters.AddWithValue("$level", logLevel);
-                    }
+                    IpAddress = g.Key,
+                    VisitsCount = g.Count(),
+                    LastVisitTime = g.Max(v => v.VisitTime)
+                })
+                .ToListAsync();
+            var total = await allVisits.CountAsync();
 
-                    using (var reader = await command.ExecuteReaderAsync())
+            // 3. Считываем логи из отдельной БД SQLite
+            var logs = new List<Logs>();
+            var configuration = HttpContext.RequestServices.GetService<IConfiguration>();
+            var logDbPath = Path.Combine(AppContext.BaseDirectory, "logs.db");
+            var logConnectionStr = $"Data Source={logDbPath}";
+            using (var conn = new SqliteConnection(logConnectionStr))
+            {
+                await conn.OpenAsync();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = string.IsNullOrEmpty(logLevel)
+                    ? "SELECT Timestamp, Level, Exception, RenderedMessage, Properties FROM Logs ORDER BY Timestamp DESC LIMIT 100"
+                    : "SELECT Timestamp, Level, Exception, RenderedMessage, Properties FROM Logs WHERE Level = $level ORDER BY Timestamp DESC LIMIT 100";
+                if (!string.IsNullOrEmpty(logLevel))
+                    cmd.Parameters.AddWithValue("$level", logLevel);
+
+                using var rdr = await cmd.ExecuteReaderAsync();
+                while (await rdr.ReadAsync())
+                {
+                    logs.Add(new Logs
                     {
-                        while (await reader.ReadAsync())
-                        {
-                            logs.Add(new Logs
-                            {
-                                Timestamp = reader.GetDateTime(0),
-                                Level = reader.GetString(1),
-                                Exception = reader.GetString(2),
-                                RenderedMessage = reader.GetString(3),
-                                Properties= reader.GetString(4)
-                            });
-                        }
-                    }
+                        Timestamp = rdr.GetDateTime(0),
+                        Level = rdr.GetString(1),
+                        Exception = rdr.IsDBNull(2) ? null : rdr.GetString(2),
+                        RenderedMessage = rdr.GetString(3),
+                        Properties = rdr.GetString(4)
+                    });
                 }
             }
-            model.Logs = logs;
+
+            // 4. Собираем модель и возвращаем View
+            var model = new AdminViewModel
+            {
+                Profile = profile ?? new Profile(),
+                educations = educations,
+                Projects = projects,
+                Skills = skills,
+                Certificates = certificates,
+                experiences = experiences,
+                visitorStats = new VisitorStatsViewModel
+                {
+                    Groups = groups,
+                    TotalVisits = total
+                },
+                Logs = logs
+            };
+
+            if (profile == null)
+            {
+                _logger.LogWarning("Профиль не найден, создайте профиль в базе данных");
+                TempData["ErrorMessage"] = "Профиль не найден. Пожалуйста, создайте профиль в базе данных.";
+            }
 
             _logger.LogInformation("Данные для админской панели успешно загружены");
             return View(model);
         }
+
 
         // POST: /Admin/UpdateProfile
         [HttpPost]
@@ -115,6 +127,8 @@ namespace PortofolioKazhuro.Controllers
                     GitHubUrl = vm.Profile.GitHubUrl,
                     LeetCodeUrl = vm.Profile.LeetCodeUrl,
                     LinkedinUrl = vm.Profile.LinkedinUrl,
+                    TelegramUrl = vm.Profile.TelegramUrl,
+                    PhoneNumber = vm.Profile.PhoneNumber,
                     About = vm.Profile.About
                 };
                 //TempData["ErrorMessage"] = "Профиль не найден.";
@@ -127,9 +141,11 @@ namespace PortofolioKazhuro.Controllers
                 profile.Surname = vm.Profile.Surname;
                 profile.Patronymic = vm.Profile.Patronymic;
                 profile.Email = vm.Profile.Email;
+                profile.PhoneNumber = vm.Profile.PhoneNumber;
                 profile.GitHubUrl = vm.Profile.GitHubUrl;
                 profile.LeetCodeUrl = vm.Profile.LeetCodeUrl;
                 profile.LinkedinUrl = vm.Profile.LinkedinUrl;
+                profile.TelegramUrl = vm.Profile.TelegramUrl;
                 profile.About = vm.Profile.About;
             }
             // Если загружен новый файл
@@ -196,6 +212,45 @@ namespace PortofolioKazhuro.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ClearLogs()
+        {
+            try
+            {
+                // Формируем путь и строку подключения к базе логов
+                var logDbPath = Path.Combine(AppContext.BaseDirectory, "logs.db");
+                var connectionString = $"Data Source={logDbPath}";
+
+                // Открываем соединение и выполняем очистку таблицы
+                await using var connection = new SqliteConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using (var deleteCmd = connection.CreateCommand())
+                {
+                    deleteCmd.CommandText = "DELETE FROM Logs;";
+                    var deletedCount = await deleteCmd.ExecuteNonQueryAsync();
+                    TempData["Success"] = $"Удалено {deletedCount} записей логов.";
+                }
+
+                // Опционально: уменьшаем размер файла после большого удаления
+                await using (var vacuumCmd = connection.CreateCommand())
+                {
+                    vacuumCmd.CommandText = "VACUUM;";
+                    await vacuumCmd.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Ошибка при очистке логов");
+                TempData["Error"] = "Не удалось очистить логи. Проверьте настройки БД.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteEducation(int id)
@@ -218,7 +273,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при удалении образования (Id: {Id})", id);
-                    TempData["ErrorMessage"] = "Не удалось удалить образование.";
+                    TempData["Error"] = "Не удалось удалить образование.";
                 }
             }
 
@@ -236,7 +291,7 @@ namespace PortofolioKazhuro.Controllers
             if (string.IsNullOrWhiteSpace(title))
             {
                 _logger.LogWarning("Попытка добавить проект без названия");
-                TempData["ErrorMessage"] = "Название проекта не может быть пустым.";
+                TempData["Error"] = "Название проекта не может быть пустым.";
             }
             else
             {
@@ -256,7 +311,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при сохранении проекта: {Title}", title);
-                    TempData["ErrorMessage"] = "Не удалось добавить проект.";
+                    TempData["Error"] = "Не удалось добавить проект.";
                 }
             }
 
@@ -285,7 +340,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при удалении проекта (Id: {Id})", id);
-                    TempData["ErrorMessage"] = "Не удалось удалить проект.";
+                    TempData["Error"] = "Не удалось удалить проект.";
                 }
             }
 
@@ -315,7 +370,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при добавлении навыка: {Name}", name);
-                    TempData["ErrorMessage"] = "Не удалось добавить навык.";
+                    TempData["Error"] = "Не удалось добавить навык.";
                 }
             }
 
@@ -344,7 +399,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при удалении навыка (Id: {Id})", id);
-                    TempData["ErrorMessage"] = "Не удаётся удалить навык.";
+                    TempData["Error"] = "Не удаётся удалить навык.";
                 }
             }
 
@@ -374,7 +429,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при добавлении сертификата: {Name}", name);
-                    TempData["ErrorMessage"] = "Не удалось добавить сертификат.";
+                    TempData["Error"] = "Не удалось добавить сертификат.";
                 }
             }
 
@@ -403,7 +458,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при удалении сертификата (Id: {Id})", id);
-                    TempData["ErrorMessage"] = "Не удалось удалить сертификат.";
+                    TempData["Error"] = "Не удалось удалить сертификат.";
                 }
             }
 
@@ -433,7 +488,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при добавлении опыта работы");
-                    TempData["ErrorMessage"] = "Не удалось добавить опыт работы.";
+                    TempData["Error"] = "Не удалось добавить опыт работы.";
                 }
             }
 
@@ -462,7 +517,7 @@ namespace PortofolioKazhuro.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Ошибка при удалении опыта работы (Id: {Id})", id);
-                    TempData["ErrorMessage"] = "Не удалось удалить опыт работы.";
+                    TempData["Error"] = "Не удалось удалить опыт работы.";
                 }
             }
 

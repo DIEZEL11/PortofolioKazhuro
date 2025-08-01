@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortofolioKazhuro.Context;
 using Serilog;
-using Serilog.Events;
 
 try
 {
@@ -9,7 +8,9 @@ try
 
     // 👇 Формируем путь к файлу БД и подключаем её
     var dbFileName = "portfolio.db";
+    var dbLogFileName = "Logs.db";
     var dbPath = Path.Combine(AppContext.BaseDirectory, dbFileName);
+    var dbLogsPath = Path.Combine(AppContext.BaseDirectory, dbLogFileName);
     var connectionString = $"Data Source={dbPath}";
     builder.Services.AddDbContext<PortfolioContext>(options =>
         options.UseSqlite(connectionString));
@@ -20,7 +21,7 @@ try
         .Enrich.FromLogContext()
         .WriteTo.Console()
         .WriteTo.SQLite(
-            sqliteDbPath: dbPath,
+            sqliteDbPath: dbLogsPath,
             tableName: "Logs",
             batchSize: 1)
         .Filter.ByExcluding(logEvent =>
@@ -38,7 +39,7 @@ try
     // 👇 Регистрация сервисов
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddControllersWithViews();
-
+    builder.WebHost.UseUrls("https://0.0.0.0:6688");
     var app = builder.Build();
 
     // 👇 Конфигурация пайплайна
@@ -51,6 +52,9 @@ try
     app.UseHttpsRedirection();
     app.UseRouting();
     app.UseAuthorization();
+    app.UseStaticFiles();
+    app.UseMiddleware<VisitorLoggingMiddleware>();
+
 
     app.MapStaticAssets();
 

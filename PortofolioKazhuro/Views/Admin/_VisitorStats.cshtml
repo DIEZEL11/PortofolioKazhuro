@@ -1,0 +1,36 @@
+﻿@using PortofolioKazhuro.ViewModel
+@model VisitorStatsViewModel
+
+<div class="mb-3">
+    <span class="fw-semibold">Всего визитов: </span>
+    <span class="fs-5">@Model.TotalVisits</span>
+</div>
+
+<div class="card mb-4 shadow-sm border-0 rounded-4">
+    <div class="card-header bg-light rounded-top-4">
+        <span class="fw-semibold">
+            <i class="fas fa-users me-2 text-primary"></i>Статистика посетителей
+        </span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-striped mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>IP-адрес</th>
+                    <th>Кол-во заходов</th>
+                    <th>Последний визит</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var g in Model.Groups)
+                {
+                    <tr>
+                        <td>@g.IpAddress</td>
+                        <td>@g.VisitsCount</td>
+                        <td>@g.LastVisitTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

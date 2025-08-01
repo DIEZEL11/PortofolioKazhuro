@@ -3,73 +3,283 @@
 
 @{
     ViewData["Title"] = "Обо мне";
+    Layout = "_Layout";
 }
-
-<h1>@Model.Profile.Name</h1>
-
-@* <img src="@Model.Profile" alt="Фото профиля" width="150" /> *@
-
-<p>@Model.Profile.About</p>
-
-<p>
-    Email: <a href="mailto:@Model.Profile.Email">@Model.Profile.Email</a><br />
-    GitHub: <a href="@Model.Profile.GitHubUrl" target="_blank">@Model.Profile.GitHubUrl</a><br />
-    LeetCode: <a href="@Model.Profile.LeetCodeUrl" target="_blank">@Model.Profile.LeetCodeUrl</a>
-</p>
-
-<hr />
-
-<h2>Навыки</h2>
-<ul>
-    @foreach (var skill in Model.Skills)
-    {
-        <li>@skill.Name</li>
+<style>
+    .profile-glass-card {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 20px;
+        padding: 24px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.25);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        transition: transform .3s, box-shadow .3s;
     }
-</ul>
 
-<hr />
+        .profile-glass-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+        }
 
-<h2>Образование</h2>
-<ul>
-    @foreach (var edu in Model.educations)
-    {
-        <li>
-            <strong>@edu.name</strong>
-            (@edu.DateStart?.ToString("yyyy") – @edu.DateEnd?.ToString("yyyy"))
-        </li>
+    .profile-photo {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 4px solid rgba(255,255,255,0.6);
+        object-fit: cover;
+        background: #f0f0f0;
     }
-</ul>
 
-<hr />
+    .profile-details h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
 
-<h2>Проекты</h2>
-<div>
-    @foreach (var project in Model.Projects)
-    {
-        <div style="margin-bottom:1em;">
-            <h3>@project.Title</h3>
-            <p>@project.Description</p>
-            <p><a href="@project.GitHubUrl" target="_blank">Исходники на GitHub</a></p>
+    .profile-details p.about {
+        color: #555;
+        margin: 8px 0 16px;
+    }
+
+    .profile-contacts a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-right: 12px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: .9rem;
+        text-decoration: none;
+        color: #fff;
+        transition: background .2s;
+    }
+
+    .contact-mail {
+        background: #28a745;
+    }
+
+        .contact-mail:hover {
+            background: #218838;
+        }
+
+    .contact-phone {
+        background: #007bff;
+    }
+
+        .contact-phone:hover {
+            background: #0069d9;
+        }
+
+    .social-links a {
+        display: inline-flex;
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #fff;
+        font-size: 1.1rem;
+        transition: transform .2s;
+    }
+
+        .social-links a:hover {
+            transform: scale(1.1);
+        }
+
+    .social-github {
+        background: #24292e;
+    }
+
+    .social-leetcode {
+        background: #ffa116;
+    }
+
+    .social-linkedin {
+        background: #0077b5;
+    }
+
+    .social-telegram {
+        background: #0088cc;
+    }
+</style>
+
+<div class="container py-4">
+    <!-- Профиль -->
+    <div class="profile-glass-card">
+        <!-- Фото -->
+        <div>
+            @if (Model.Profile.PhotoData != null)
+            {
+                var img = Convert.ToBase64String(Model.Profile.PhotoData);
+                <img src="data:@Model.Profile.PhotoMimeType;base64,@img"
+                     class="profile-photo" alt="Фото профиля" />
+            }
+            else
+            {
+                <div class="profile-photo d-flex
+                      align-items-center justify-content-center">
+                    <i class="fas fa-user fa-2x text-secondary"></i>
+                </div>
+            }
         </div>
-    }
+
+        <!-- Детали -->
+        <div class="profile-details">
+            <h2>@Model.Profile.Name @Model.Profile.Surname</h2>
+            <p class="mb-1 text-muted">@Model.Profile.Patronymic</p>
+            <p class="about">@Model.Profile.About</p>
+
+            <!-- Контакты -->
+            <div class="profile-contacts mb-3">
+                <a href="mailto:@Model.Profile.Email"
+                   class="contact-mail">
+                    <i class="fas fa-envelope"></i>Написать
+                </a>
+                <a href="tel:@Model.Profile.PhoneNumber"
+                   class="contact-phone">
+                    <i class="fas fa-phone"></i>Позвонить
+                </a>
+            </div>
+
+            <!-- Социальные сети -->
+            <div class="social-links">
+                @if (!string.IsNullOrWhiteSpace(Model.Profile.GitHubUrl))
+                {
+                    <a href="@Model.Profile.GitHubUrl" class="social-github" target="_blank">
+                        <i class="fab fa-github"></i>
+                    </a>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Profile.LeetCodeUrl))
+                {
+                    <a href="@Model.Profile.LeetCodeUrl" class="social-leetcode" target="_blank">
+                        <i class="fas fa-code"></i>
+                    </a>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Profile.LinkedinUrl))
+                {
+                    <a href="@Model.Profile.LinkedinUrl" class="social-linkedin" target="_blank">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Profile.TelegramUrl))
+                {
+                    <a href="@Model.Profile.TelegramUrl" class="social-telegram" target="_blank">
+                        <i class="fab fa-telegram"></i>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Образование -->
+    <div class="card mb-4 shadow border-0 rounded-4">
+        <div class="card-header bg-light">
+            <strong><i class="fas fa-graduation-cap me-2 text-primary"></i>Образование</strong>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Начало</th>
+                        <th>Окончание</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var edu in Model.educations)
+                    {
+                        <tr>
+                            <td>@edu.name</td>
+                            <td>@edu.DateStart?.ToString("yyyy-MM-dd")</td>
+                            <td>@edu.DateEnd?.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Проекты -->
+    <div class="card mb-4 shadow border-0 rounded-4">
+        <div class="card-header bg-light">
+            <strong><i class="fas fa-project-diagram me-2 text-primary"></i>Проекты</strong>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Проект</th>
+                        <th>Описание</th>
+                        <th>GitHub</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Projects)
+                    {
+                        <tr>
+                            <td>@p.Title</td>
+                            <td>@p.Description</td>
+                            <td>
+                                <a href="@p.GitHubUrl" class="btn btn-sm btn-outline-dark" target="_blank">
+                                    <i class="fab fa-github me-1"></i>GitHub
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Навыки, Сертификаты, Опыт -->
+    <div class="row mb-4">
+        <!-- Навыки -->
+        <div class="col-lg-4">
+            <div class="card shadow border-0 rounded-4 h-100">
+                <div class="card-header bg-light">
+                    <strong><i class="fas fa-lightbulb me-2 text-primary"></i>Навыки</strong>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var s in Model.Skills)
+                    {
+                        <li class="list-group-item">@s.Name</li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <!-- Сертификаты -->
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="card shadow border-0 rounded-4 h-100">
+                <div class="card-header bg-light">
+                    <strong><i class="fas fa-certificate me-2 text-primary"></i>Сертификаты</strong>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var c in Model.Certificates)
+                    {
+                        <li class="list-group-item">@c.Name</li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <!-- Опыт -->
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="card shadow border-0 rounded-4 h-100">
+                <div class="card-header bg-light">
+                    <strong><i class="fas fa-briefcase me-2 text-primary"></i>Опыт работы</strong>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var e in Model.experiences)
+                    {
+                        <li class="list-group-item">@e.Description</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>
-
-<hr />
-
-<h2>Сертификаты</h2>
-<ul>
-    @foreach (var cert in Model.Certificates)
-    {
-        <li>@cert.Name</li>
-    }
-</ul>
-
-<hr />
-
-<h2>Опыт работы</h2>
-<ul>
-    @foreach (var exp in Model.experiences)
-    {
-        <li>@exp.Description</li>
-    }
-</ul>

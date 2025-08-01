@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PortofolioKazhuro.Migrations
 {
     /// <inheritdoc />
-    public partial class BD : Migration
+    public partial class AddPhoneNumber : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -68,7 +68,8 @@ namespace PortofolioKazhuro.Migrations
                     LinkedinUrl = table.Column<string>(type: "TEXT", nullable: true),
                     TelegramUrl = table.Column<string>(type: "TEXT", nullable: true),
                     About = table.Column<string>(type: "TEXT", nullable: true),
-                    Email = table.Column<string>(type: "TEXT", nullable: true)
+                    Email = table.Column<string>(type: "TEXT", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "TEXT", maxLength: 13, nullable: true)
                 },
                 constraints: table =>
                 {

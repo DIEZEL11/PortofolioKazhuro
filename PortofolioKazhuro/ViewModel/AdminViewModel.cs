@@ -12,7 +12,7 @@ namespace PortofolioKazhuro.ViewModel
         public List<Skill> Skills { get; set; }
         public List<Certificate> Certificates { get; set; }
         public List<Experience> experiences { get; set; }
-        public List<VisitorStat> visitorStats { get; set; }
+        public VisitorStatsViewModel visitorStats { get; set; }
         public List<Logs> Logs { get; set; } // Добавлено для логов
     }
 }

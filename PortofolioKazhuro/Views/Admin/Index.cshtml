@@ -7,14 +7,24 @@
     ViewData["Title"] = "Админская панель";
     Layout = "_Layout";
 }
-@if (TempData["ErrorMessage"] != null)
+@if (TempData["Error"] != null)
 {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        @TempData["ErrorMessage"]
+        @TempData["Error"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
     </div>
 }
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+}
+
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 fw-bold text-primary"><i class="fas fa-tools me-2"></i>@ViewData["Title"]</h1>
@@ -81,6 +91,12 @@
                                 <input asp-for="Profile.Email" class="form-control" placeholder="Email" />
                                 <label asp-for="Profile.Email">Email</label>
                             </div>
+                            <div class="col-12 col-md-6 form-floating mb-2">
+                                <input asp-for="Profile.PhoneNumber" class="form-control" placeholder="Телефон" />
+                                <label asp-for="Profile.PhoneNumber">Телефон</label>
+                                <span asp-validation-for="Profile.PhoneNumber" class="text-danger small"></span>
+                            </div>
+
                             <div class="row g-3 mb-2">
                                 <div class="col-6 col-md-3">
                                     <div class="input-group has-validation">
@@ -360,31 +376,10 @@
         </div>
     </div>
 
+
     <!-- VISITOR STATS -->
-    <div class="card mb-4 shadow-sm border-0 rounded-4">
-        <div class="card-header bg-light rounded-top-4">
-            <span class="fw-semibold"><i class="fas fa-users me-2 text-primary"></i>Статистика посетителей</span>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-sm table-striped mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>IP-адрес</th>
-                        <th>Время визита</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var vs in Model.visitorStats)
-                    {
-                        <tr>
-                            <td>@vs.IpAddress</td>
-                            <td>@vs.VisitTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
+    @await Html.PartialAsync("_VisitorStats", Model.visitorStats)
+
 
     <!-- SYSTEM LOGS -->
    
@@ -406,6 +401,15 @@
             </select>
             <button type="submit" class="btn btn-sm btn-primary">Применить</button>
         </form>
+        <!-- Форма очистки логов -->
+        <form asp-action="ClearLogs" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="btn btn-sm btn-danger"
+                    onclick="return confirm('Вы уверены, что хотите удалить все логи?');">
+                Очистить логи
+            </button>
+        </form>
     </div>
     <div class="card-body p-0">
         <table class="table table-sm table-striped mb-0 align-middle">
@@ -413,7 +417,9 @@
                 <tr>
                     <th>Время</th>
                     <th>Уровень</th>
+                    <th>Ошибка</th>
                     <th>Сообщение</th>
+                    <th>Свойство</th>
                 </tr>
             </thead>
             <tbody>

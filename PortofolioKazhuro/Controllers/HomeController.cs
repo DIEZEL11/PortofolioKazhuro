@@ -22,17 +22,14 @@ namespace PortofolioKazhuro.Controllers
 
         public async Task<IActionResult> Index()
         {
-              var model = new AdminViewModel
+            var model = new AdminViewModel
             {
-                Profile = await _context.Profiles.FirstAsync(),
+                Profile = await _context.Profiles.FirstOrDefaultAsync(),
                 educations = await _context.educations.ToListAsync(),
                 Projects = await _context.Projects.ToListAsync(),
                 Skills = await _context.Skills.ToListAsync(),
                 Certificates = await _context.Certificates.ToListAsync(),
                 experiences = await _context.Experiences.ToListAsync(),
-                visitorStats = await _context.VisitorStats.ToListAsync(),
-
-
             };
             return View(model);
         }

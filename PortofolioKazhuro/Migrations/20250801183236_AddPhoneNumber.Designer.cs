@@ -11,8 +11,8 @@ using PortofolioKazhuro.Context;
 namespace PortofolioKazhuro.Migrations
 {
     [DbContext(typeof(PortfolioContext))]
-    [Migration("20250801153010_BD")]
-    partial class BD
+    [Migration("20250801183236_AddPhoneNumber")]
+    partial class AddPhoneNumber
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -97,6 +97,10 @@ namespace PortofolioKazhuro.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Patronymic")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(13)
                         .HasColumnType("TEXT");
 
                     b.Property<byte[]>("PhotoData")
