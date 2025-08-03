@@ -11,13 +11,14 @@ namespace PortofolioKazhuro.Controllers
     {
         private readonly PortfolioContext _context;
         private readonly ILogger<AdminController> _logger;
+        private readonly IWebHostEnvironment _environment;
 
-        public AdminController(PortfolioContext context,
-                               ILogger<AdminController> logger)
+        public AdminController(PortfolioContext context, ILogger<AdminController> logger, IWebHostEnvironment environment)
         {
             _context = context;
             _logger = logger;
             _logger.LogInformation("Инициализация AdminController");
+            _environment = environment;
         }
 
         // GET: /Admin
@@ -27,9 +28,9 @@ namespace PortofolioKazhuro.Controllers
 
             // 1. Получаем профиль и остальные справочники
             var profile = await _context.Profiles.FirstOrDefaultAsync();
-            var educations = await _context.educations.ToListAsync();
+            var educations = await _context.Educations.ToListAsync();
             var projects = await _context.Projects.ToListAsync();
-            var skills = await _context.Skills.ToListAsync();
+            var skills = await _context.skillCategories.Include(s =>s.Skills).ToListAsync();
             var certificates = await _context.Certificates.ToListAsync();
             var experiences = await _context.Experiences.ToListAsync();
 
@@ -174,46 +175,64 @@ namespace PortofolioKazhuro.Controllers
         }
 
         // ----- ОБРАЗОВАНИЕ -----
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddEducation(Education model)
+        {
+            if (model.DateEnd.HasValue && model.DateStart.HasValue && model.DateEnd < model.DateStart)
+            {
+                ModelState.AddModelError("DateEnd", "Дата окончания не может быть раньше даты начала.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var educations = _context.Educations.ToList();
+                ViewBag.Error = "Пожалуйста, исправьте ошибки.";
+                return View("Index", educations);
+            }
+
+            _context.Educations.Add(model);
+            _context.SaveChanges();
+            return RedirectToAction("Index");
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteEducation(int id)
+        {
+            var education = _context.Educations.Find(id);
+            if (education != null)
+            {
+                _context.Educations.Remove(education);
+                _context.SaveChanges();
+            }
+            return RedirectToAction("Index");
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddEducation(string name, DateTime? dateStart, DateTime? dateEnd)
+        public IActionResult EditEducation(Education model)
         {
-            _logger.LogInformation("Добавление образования: {Name} ({Start}–{End})",
-                                   name, dateStart, dateEnd);
-
-            if (string.IsNullOrWhiteSpace(name))
+            if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Попытка добавить образование без названия");
-                TempData["ErrorMessage"] = "Укажите название учебного заведения.";
-            }
-            else
-            {
-                var edu = new Education
-                {
-                    name = name,
-                    DateStart = dateStart,
-                    DateEnd = dateEnd
-                };
-
-                try
-                {
-                    await _context.educations.AddAsync(edu);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Образование добавлено (Id: {Id})", edu.id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при сохранении образования: {Name}", name);
-                    TempData["ErrorMessage"] = "Не удалось добавить образование.";
-                }
+                var educations = _context.Educations.ToList();
+                ViewBag.Error = "Ошибка при редактировании.";
+                return View("Index", educations);
             }
 
-            return RedirectToAction(nameof(Index));
+            var edu = _context.Educations.Find(model.Id);
+            if (edu != null)
+            {
+                edu.Institution = model.Institution;
+                edu.Degree = model.Degree;
+                edu.DateStart = model.DateStart;
+                edu.DateEnd = model.DateEnd;
+                edu.Description = model.Description;
+
+                _context.SaveChanges();
+            }
+
+            return RedirectToAction("Index");
         }
-
-
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -251,219 +270,352 @@ namespace PortofolioKazhuro.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteEducation(int id)
-        {
-            _logger.LogInformation("Удаление образования (Id: {Id})", id);
-
-            var edu = await _context.educations.FindAsync(id);
-            if (edu == null)
-            {
-                _logger.LogWarning("Образование не найдено для удаления (Id: {Id})", id);
-            }
-            else
-            {
-                try
-                {
-                    _context.educations.Remove(edu);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Образование удалено (Id: {Id})", id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при удалении образования (Id: {Id})", id);
-                    TempData["Error"] = "Не удалось удалить образование.";
-                }
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
+       
 
         // ----- ПРОЕКТЫ -----
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddProject(string title, string gitHubUrl, string description)
+        public IActionResult AddProject(string Title, string? Description, string? GitHubUrl)
         {
-            _logger.LogInformation("Добавление проекта: {Title}", title);
-
-            if (string.IsNullOrWhiteSpace(title))
+            if (string.IsNullOrWhiteSpace(Title))
             {
-                _logger.LogWarning("Попытка добавить проект без названия");
-                TempData["Error"] = "Название проекта не может быть пустым.";
+                ModelState.AddModelError("Title", "Название обязательно");
             }
-            else
-            {
-                var project = new Project
-                {
-                    Title = title,
-                    GitHubUrl = gitHubUrl,
-                    Description = description
-                };
 
-                try
-                {
-                    await _context.Projects.AddAsync(project);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Проект добавлен (Id: {Id})", project.Id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при сохранении проекта: {Title}", title);
-                    TempData["Error"] = "Не удалось добавить проект.";
-                }
+            if (!ModelState.IsValid)
+            {
+                var all = _context.Projects.ToList();
+                return View("Index", all);
             }
+
+            var project = new Project
+            {
+                Title = Title,
+                Description = Description,
+                GitHubUrl = GitHubUrl,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Projects.Add(project);
+            _context.SaveChanges();
 
             return RedirectToAction(nameof(Index));
+        }
+
+        public IActionResult EditProject(int id)
+        {
+            var project = _context.Projects.Find(id);
+            return project == null ? NotFound() : View(project);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteProject(int id)
+        public IActionResult EditProject(int id, string Title, string? Description, string? GitHubUrl)
         {
-            _logger.LogInformation("Удаление проекта (Id: {Id})", id);
-
-            var project = await _context.Projects.FindAsync(id);
+            var project = _context.Projects.Find(id);
             if (project == null)
+                return NotFound();
+
+            if (string.IsNullOrWhiteSpace(Title))
             {
-                _logger.LogWarning("Проект не найден для удаления (Id: {Id})", id);
+                ModelState.AddModelError("Title", "Название обязательно");
             }
-            else
+
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    _context.Projects.Remove(project);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Проект удалён (Id: {Id})", id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при удалении проекта (Id: {Id})", id);
-                    TempData["Error"] = "Не удалось удалить проект.";
-                }
+                return View(project);
+            }
+
+            project.Title = Title;
+            project.Description = Description;
+            project.GitHubUrl = GitHubUrl;
+
+            _context.SaveChanges();
+            return RedirectToAction(nameof(Index));
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteProject(int id)
+        {
+            var project = _context.Projects.Find(id);
+            if (project != null)
+            {
+                _context.Projects.Remove(project);
+                _context.SaveChanges();
             }
 
             return RedirectToAction(nameof(Index));
         }
+
+
 
         // ----- НАВЫКИ -----
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddSkill(string name)
+        [HttpPost]
+        public async Task<IActionResult> CreateSkillAndCategory(string CategoryName, string SkillName, int Proficiency)
         {
-            _logger.LogInformation("Добавление навыка: {Name}", name);
-
-            if (string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(CategoryName) || string.IsNullOrWhiteSpace(SkillName) || Proficiency < 0 || Proficiency > 100)
             {
-                _logger.LogWarning("Попытка добавить навык без названия");
-            }
-            else
-            {
-                try
-                {
-                    await _context.Skills.AddAsync(new Skill { Name = name });
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Навык добавлен: {Name}", name);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при добавлении навыка: {Name}", name);
-                    TempData["Error"] = "Не удалось добавить навык.";
-                }
+                TempData["ErrorMessage"] = "Введите корректные данные.";
+                return RedirectToAction("Index");
             }
 
-            return RedirectToAction(nameof(Index));
+            var category = new SkillCategory { Name = CategoryName };
+            var skill = new Skill
+            {
+                Name = SkillName,
+                Proficiency = Proficiency,
+                SkillCategory = category
+            };
+
+            _context.skillCategories.Add(category);
+            _context.Skills.Add(skill);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Категория и навык успешно добавлены.";
+            return RedirectToAction("Index");
+        }
+        [HttpPost]
+        public async Task<IActionResult> AddSkill (string Name, int Proficiency, int SkillCategoryId) 
+        {
+            if (string.IsNullOrWhiteSpace(Name) || Proficiency < 0 || Proficiency > 100)
+            {
+                TempData["ErrorMessage"] = "Введите корректные данные.";
+                return RedirectToAction("Index");
+            }
+            var result = await _context.skillCategories
+                .FirstOrDefaultAsync(c => c.Id == SkillCategoryId);
+            var skill = new Skill
+            {
+                Name = Name,
+                Proficiency = Proficiency,
+                SkillCategory = result
+            };
+            _context.Skills.Add(skill);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Навык успешно добавлен.";
+            return RedirectToAction("Index");
+        }
+        [HttpPost]
+        public async Task<IActionResult> DeleteSkill(int SkillId)
+        {
+            var skill = await _context.Skills.FindAsync(SkillId);
+            if (skill != null)
+            {
+                _context.Skills.Remove(skill);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteSkill(int id)
+        public async Task<IActionResult> EditSkill(int SkillId, string NewName, int NewProficiency)
         {
-            _logger.LogInformation("Удаление навыка (Id: {Id})", id);
-
-            var skill = await _context.Skills.FindAsync(id);
-            if (skill == null)
+            var skill = await _context.Skills.FindAsync(SkillId);
+            if (skill != null)
             {
-                _logger.LogWarning("Навык не найден для удаления (Id: {Id})", id);
+                skill.Name = NewName;
+                skill.Proficiency = NewProficiency;
+                await _context.SaveChangesAsync();
             }
-            else
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditCategory(int CategoryId, string NewName)
+        {
+            var category = await _context.skillCategories.FindAsync(CategoryId);
+            if (category != null)
             {
-                try
-                {
-                    _context.Skills.Remove(skill);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Навык удалён (Id: {Id})", id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при удалении навыка (Id: {Id})", id);
-                    TempData["Error"] = "Не удаётся удалить навык.";
-                }
+                category.Name = NewName;
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Index");
+        }
+        [HttpPost]
+        public async Task<IActionResult> DeleteCategory(int CategoryId)
+        {
+            var category = await _context.skillCategories
+                .Include(c => c.Skills)
+                .FirstOrDefaultAsync(c => c.Id == CategoryId);
+
+            if (category != null)
+            {
+                _context.Skills.RemoveRange(category.Skills); // сначала удалить навыки
+                _context.skillCategories.Remove(category);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Index");
+        }
+        [HttpPost]
+        public async Task<IActionResult> AddCategory(string CategoryName)
+        {
+            if (string.IsNullOrWhiteSpace(CategoryName))
+            {
+                TempData["ErrorMessage"] = "Название категории не может быть пустым.";
+                return RedirectToAction("Index");
             }
 
-            return RedirectToAction(nameof(Index));
+            var exists = await _context.skillCategories.AnyAsync(c => c.Name == CategoryName);
+            if (exists)
+            {
+                TempData["ErrorMessage"] = "Такая категория уже существует.";
+                return RedirectToAction("Index");
+            }
+
+            var category = new SkillCategory { Name = CategoryName };
+            _context.skillCategories.Add(category);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Категория успешно добавлена.";
+            return RedirectToAction("Index");
         }
 
         // ----- СЕРТИФИКАТЫ -----
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddCertificate(string name)
+        public IActionResult AddCertificate(string Name, DateTime? IssueDate, IFormFile? File)
         {
-            _logger.LogInformation("Добавление сертификата: {Name}", name);
+            if (string.IsNullOrWhiteSpace(Name))
+            {
+                ModelState.AddModelError("Name", "Название обязательно");
+            }
 
-            if (string.IsNullOrWhiteSpace(name))
+            if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Попытка добавить сертификат без названия");
+                var allCerts = _context.Certificates.ToList();
+                return View("Index", allCerts);
             }
-            else
+
+            string? filePath = null;
+
+            if (File != null && File.Length > 0)
             {
-                try
+                var uploads = Path.Combine(_environment.WebRootPath, "uploads");
+                Directory.CreateDirectory(uploads);
+                var fileName = Guid.NewGuid() + Path.GetExtension(File.FileName);
+                var fullPath = Path.Combine(uploads, fileName);
+
+                using (var stream = new FileStream(fullPath, FileMode.Create))
                 {
-                    await _context.Certificates.AddAsync(new Certificate { Name = name });
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Сертификат добавлен: {Name}", name);
+                    File.CopyTo(stream);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при добавлении сертификата: {Name}", name);
-                    TempData["Error"] = "Не удалось добавить сертификат.";
-                }
+
+                filePath = "/uploads/" + fileName;
             }
+
+            var cert = new Certificate
+            {
+                Name = Name,
+                IssueDate = IssueDate,
+                FilePath = filePath
+            };
+
+            _context.Certificates.Add(cert);
+            _context.SaveChanges();
 
             return RedirectToAction(nameof(Index));
         }
+        // GET: /Certificates/EditCertificate/5
+        public IActionResult EditCertificate(int id)
+        {
+            var cert = _context.Certificates.Find(id);
+            if (cert == null)
+                return NotFound();
 
+            return View(cert);
+        }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteCertificate(int id)
+        public IActionResult EditCertificate(int id, string Name, DateTime? IssueDate, IFormFile? File)
         {
-            _logger.LogInformation("Удаление сертификата (Id: {Id})", id);
-
-            var cert = await _context.Certificates.FindAsync(id);
+            var cert = _context.Certificates.Find(id);
             if (cert == null)
+                return NotFound();
+
+            if (string.IsNullOrWhiteSpace(Name))
             {
-                _logger.LogWarning("Сертификат не найден для удаления (Id: {Id})", id);
-            }
-            else
-            {
-                try
-                {
-                    _context.Certificates.Remove(cert);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Сертификат удалён (Id: {Id})", id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при удалении сертификата (Id: {Id})", id);
-                    TempData["Error"] = "Не удалось удалить сертификат.";
-                }
+                ModelState.AddModelError("Name", "Название обязательно");
             }
 
+            if (!ModelState.IsValid)
+            {
+                return View(cert);
+            }
+
+            cert.Name = Name;
+            cert.IssueDate = IssueDate;
+
+            if (File != null && File.Length > 0)
+            {
+                // Удалить старый файл, если был
+                if (!string.IsNullOrEmpty(cert.FilePath))
+                {
+                    var oldPath = Path.Combine(_environment.WebRootPath, cert.FilePath.TrimStart('/'));
+                    if (System.IO.File.Exists(oldPath))
+                    {
+                        System.IO.File.Delete(oldPath);
+                    }
+                }
+
+                var uploads = Path.Combine(_environment.WebRootPath, "uploads");
+                Directory.CreateDirectory(uploads);
+                var fileName = Guid.NewGuid() + Path.GetExtension(File.FileName);
+                var fullPath = Path.Combine(uploads, fileName);
+
+                using (var stream = new FileStream(fullPath, FileMode.Create))
+                {
+                    File.CopyTo(stream);
+                }
+
+                cert.FilePath = "/uploads/" + fileName;
+            }
+
+            _context.SaveChanges();
             return RedirectToAction(nameof(Index));
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteCertificate(int id)
+        {
+            var cert = _context.Certificates.Find(id);
+            if (cert == null)
+                return NotFound();
+
+            // Удаление файла
+            if (!string.IsNullOrEmpty(cert.FilePath))
+            {
+                var fullPath = Path.Combine(_environment.WebRootPath, cert.FilePath.TrimStart('/'));
+                if (System.IO.File.Exists(fullPath))
+                {
+                    System.IO.File.Delete(fullPath);
+                }
+            }
+
+            _context.Certificates.Remove(cert);
+            _context.SaveChanges();
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Certificates/DownloadCertificate/5
+        public IActionResult DownloadCertificate(int id)
+        {
+            var cert = _context.Certificates.Find(id);
+            if (cert == null || string.IsNullOrEmpty(cert.FilePath))
+                return NotFound();
+
+            var filePath = Path.Combine(_environment.WebRootPath, cert.FilePath.TrimStart('/'));
+            var contentType = "application/octet-stream";
+            var fileName = Path.GetFileName(filePath);
+
+            return PhysicalFile(filePath, contentType, fileName);
+        }
+
 
         // ----- ОПЫТ РАБОТЫ -----
 

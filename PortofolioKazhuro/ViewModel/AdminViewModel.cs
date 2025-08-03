@@ -9,7 +9,7 @@ namespace PortofolioKazhuro.ViewModel
         public IFormFile? PhotoFile { get; set; }
         public List<Education> educations { get; set; }
         public List<Project> Projects { get; set; }
-        public List<Skill> Skills { get; set; }
+        public List<SkillCategory> Skills { get; set; }
         public List<Certificate> Certificates { get; set; }
         public List<Experience> experiences { get; set; }
         public VisitorStatsViewModel visitorStats { get; set; }

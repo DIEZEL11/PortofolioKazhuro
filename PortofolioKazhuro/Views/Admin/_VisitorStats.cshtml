@@ -22,12 +22,12 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var g in Model.Groups)
+                @foreach (var group in Model.Groups)
                 {
                     <tr>
-                        <td>@g.IpAddress</td>
-                        <td>@g.VisitsCount</td>
-                        <td>@g.LastVisitTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@group.IpAddress</td>
+                        <td>@group.VisitsCount</td>
+                        <td>@group.LastVisitTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     </tr>
                 }
             </tbody>

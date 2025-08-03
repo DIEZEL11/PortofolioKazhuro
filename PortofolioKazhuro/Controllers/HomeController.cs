@@ -25,9 +25,9 @@ namespace PortofolioKazhuro.Controllers
             var model = new AdminViewModel
             {
                 Profile = await _context.Profiles.FirstOrDefaultAsync(),
-                educations = await _context.educations.ToListAsync(),
+                educations = await _context.Educations.ToListAsync(),
                 Projects = await _context.Projects.ToListAsync(),
-                Skills = await _context.Skills.ToListAsync(),
+                Skills = await _context.skillCategories.ToListAsync(),
                 Certificates = await _context.Certificates.ToListAsync(),
                 experiences = await _context.Experiences.ToListAsync(),
             };

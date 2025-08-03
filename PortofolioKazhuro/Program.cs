@@ -39,8 +39,16 @@ try
     // 👇 Регистрация сервисов
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddControllersWithViews();
-    builder.WebHost.UseUrls("https://0.0.0.0:6688");
+    //builder.WebHost.UseUrls("https://0.0.0.0:6688");
     var app = builder.Build();
+    // Program.cs или Startup.cs
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<PortfolioContext>();
+        db.Database.EnsureDeleted();
+        db.Database.EnsureCreated();
+    }
+
 
     // 👇 Конфигурация пайплайна
     if (!app.Environment.IsDevelopment())

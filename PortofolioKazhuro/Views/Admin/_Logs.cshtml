@@ -1,0 +1,55 @@
+﻿@model List<Logs>
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+<div class="card mb-4 shadow-sm border-0 rounded-4">
+    <div class="card-header d-flex justify-content-between align-items-center bg-light rounded-top-4">
+        <span class="fw-semibold"><i class="fas fa-clipboard-list me-2 text-primary"></i>Логи системы</span>
+        <form method="get" class="d-flex">
+            <select name="logLevel" class="form-select form-select-sm me-2">
+                @{
+                    var selectedLogLevel = HttpContextAccessor.HttpContext?.Request.Query["logLevel"].ToString();
+                }
+                <option value="">Все</option>
+                <option value="Info" selected="@(selectedLogLevel == "Info" ? "selected" : null)">Info</option>
+                <option value="Warning" selected="@(selectedLogLevel == "Warning" ? "selected" : null)">Warning</option>
+                <option value="Error" selected="@(selectedLogLevel == "Error" ? "selected" : null)">Error</option>
+                <option value="Debug" selected="@(selectedLogLevel == "Debug" ? "selected" : null)">Debug</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Применить</button>
+        </form>
+        <!-- Форма очистки логов -->
+        <form asp-action="ClearLogs" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="btn btn-sm btn-danger"
+                    onclick="return confirm('Вы уверены, что хотите удалить все логи?');">
+                Очистить логи
+            </button>
+        </form>
+    </div>
+
+    <div class="card-body p-0">
+        <table class="table table-sm table-striped mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Время</th>
+                    <th>Уровень</th>
+                    <th>Ошибка</th>
+                    <th>Сообщение</th>
+                    <th>Свойство</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var log in Model)
+                {
+                    <tr>
+                        <td>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@log.Level</td>
+                        <td>@log.Exception</td>
+                        <td>@log.RenderedMessage</td>
+                        <td>@log.Properties</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

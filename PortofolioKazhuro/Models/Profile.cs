@@ -8,6 +8,7 @@ namespace PortofolioKazhuro.Models
         public string Name { get; set; }
         public string Surname { get; set; }
         public string? Patronymic { get; set; }
+        public DateTime Birthday { get; set; }
         public byte[]? PhotoData { get; set; }
         public string? PhotoMimeType { get; set; }
         public string? GitHubUrl { get; set; }
