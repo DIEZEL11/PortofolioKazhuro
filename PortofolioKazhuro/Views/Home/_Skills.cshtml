@@ -1,0 +1,58 @@
+﻿@model IEnumerable<PortofolioKazhuro.Models.SkillCategory>
+
+@if (Model.Count() > 0)
+{
+    <div class="row gy-4">
+        @foreach (var category in Model)
+        {
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-layer-group me-2"></i>@category.Name</span>
+                        <div>
+                            <button class="btn btn-sm btn-light me-1" data-bs-toggle="modal" data-bs-target="#editCategoryModal-@category.Id" title="Редактировать категорию">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form asp-action="DeleteCategory" method="post" class="d-inline" onsubmit="return confirm('Удалить категорию и все её навыки?');">
+                                <input type="hidden" name="CategoryId" value="@category.Id" />
+                                <button type="submit" class="btn btn-sm btn-danger" title="Удалить категорию">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        @if (category.Skills != null && category.Skills.Any())
+                        {
+                            <div class="list-group mb-3">
+                                @foreach (var skill in category.Skills)
+                                {
+                                    <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+                                        <div class="flex-grow-1 me-3">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <strong>@skill.Name</strong>
+                                            <span class="text-muted">(@skill.Proficiency%)</span>
+                                            <div class="progress mt-1" style="height:6px; max-width:150px;">
+                                                <div class="progress-bar bg-success" role="progressbar"
+                                                     style="width:@skill.Proficiency%"
+                                                     aria-valuenow="@skill.Proficiency"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-muted mb-3">Нет навыков в этой категории.</div>
+                        }
+                    </div>
+                </div>
+            </div> <!-- Закрытие col -->
+        }
+    </div> <!-- Закрытие row -->
+}

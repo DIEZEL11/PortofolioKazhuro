@@ -1,14 +1,18 @@
 ﻿@using PortofolioKazhuro.ViewModel
 @model AdminViewModel
-
 @{
+    var birthday = Model.Profile.Birthday;
+    var age = birthday != null
+        ? (int)((DateTime.Now - birthday).TotalDays / 365.25)
+        : 0;
+
     ViewData["Title"] = "Обо мне";
     Layout = "_Layout";
 }
 <style>
     .profile-glass-card {
         display: grid;
-        grid-template-columns: 150px 1fr;
+        grid-template-columns: auto minmax(200px, 1fr);
         gap: 20px;
         padding: 24px;
         border-radius: 16px;
@@ -103,12 +107,33 @@
     .social-telegram {
         background: #0088cc;
     }
+
+
+
+    .profile-details {
+        margin-top: 1rem;
+    }
+
+    .profile-contacts a {
+        justify-content: center;
+        margin-bottom: 8px;
+    }
+
+    }
+
+    .input-group .form-control[readonly] {
+        background-color: #f8f9fa;
+        cursor: default;
+        transition: box-shadow .2s;
+    }
+
+        .input-group .form-control[readonly]:hover {
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
 </style>
 
 <div class="container py-4">
-    <!-- Профиль -->
     <div class="profile-glass-card">
-        <!-- Фото -->
         <div>
             @if (Model.Profile.PhotoData != null)
             {
@@ -118,32 +143,53 @@
             }
             else
             {
-                <div class="profile-photo d-flex
-                      align-items-center justify-content-center">
+                <div class="profile-photo d-flex align-items-center justify-content-center">
                     <i class="fas fa-user fa-2x text-secondary"></i>
                 </div>
             }
         </div>
 
-        <!-- Детали -->
         <div class="profile-details">
             <h2>@Model.Profile.Name @Model.Profile.Surname</h2>
             <p class="mb-1 text-muted">@Model.Profile.Patronymic</p>
             <p class="about">@Model.Profile.About</p>
 
-            <!-- Контакты -->
+            <div class="col-12 col-md-4 mb-3">
+                <label class="form-label fw-semibold">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>Дата рождения
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-calendar"></i>
+                    </span>
+                    @if (birthday != null)
+                    {
+                        <input type="text" class="form-control" readonly
+                               value="@($"{age} лет")"
+                               title="@birthday.ToString("dd MMMM yyyy")"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top" />
+                    }
+                    else
+                    {
+                        <input type="text" class="form-control" readonly
+                               value="Не указано"
+                               title="Дата рождения не задана"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top" />
+                    }
+                </div>
+            </div>
+
             <div class="profile-contacts mb-3">
-                <a href="mailto:@Model.Profile.Email"
-                   class="contact-mail">
+                <a href="mailto:@Model.Profile.Email" class="contact-mail">
                     <i class="fas fa-envelope"></i>Написать
                 </a>
-                <a href="tel:@Model.Profile.PhoneNumber"
-                   class="contact-phone">
+                <a href="tel:@Model.Profile.PhoneNumber" class="contact-phone">
                     <i class="fas fa-phone"></i>Позвонить
                 </a>
             </div>
 
-            <!-- Социальные сети -->
             <div class="social-links">
                 @if (!string.IsNullOrWhiteSpace(Model.Profile.GitHubUrl))
                 {
@@ -170,116 +216,52 @@
                     </a>
                 }
             </div>
-        </div>
-    </div>
-
-
-
-    <!-- Образование -->
-    <div class="card mb-4 shadow border-0 rounded-4">
-        <div class="card-header bg-light">
-            <strong><i class="fas fa-graduation-cap me-2 text-primary"></i>Образование</strong>
-        </div>
-        <div class="card-body">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Название</th>
-                        <th>Начало</th>
-                        <th>Окончание</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var edu in Model.educations)
-                    {
-                        <tr>
-                            <td>@edu.Institution</td>
-                            <td>@edu.DateStart?.ToString("yyyy-MM-dd")</td>
-                            <td>@edu.DateEnd?.ToString("yyyy-MM-dd")</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Проекты -->
-    <div class="card mb-4 shadow border-0 rounded-4">
-        <div class="card-header bg-light">
-            <strong><i class="fas fa-project-diagram me-2 text-primary"></i>Проекты</strong>
-        </div>
-        <div class="card-body">
-            <table class="table table-bordered table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Проект</th>
-                        <th>Описание</th>
-                        <th>GitHub</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var p in Model.Projects)
-                    {
-                        <tr>
-                            <td>@p.Title</td>
-                            <td>@p.Description</td>
-                            <td>
-                                <a href="@p.GitHubUrl" class="btn btn-sm btn-outline-dark" target="_blank">
-                                    <i class="fab fa-github me-1"></i>GitHub
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Навыки, Сертификаты, Опыт -->
-    <div class="row mb-4">
-        <!-- Навыки -->
-        <div class="col-lg-4">
-            <div class="card shadow border-0 rounded-4 h-100">
-                <div class="card-header bg-light">
-                    <strong><i class="fas fa-lightbulb me-2 text-primary"></i>Навыки</strong>
-                </div>
-                <ul class="list-group list-group-flush">
-                    @foreach (var s in Model.Skills)
-                    {
-                        <li class="list-group-item">@s.Name</li>
-                    }
-                </ul>
+            <!-- Кнопка открытия модального окна -->
+            <div class="mt-3">
+                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#jobOfferModal">
+                    <i class="fas fa-briefcase me-2"></i>Предложить работу
+                </button>
             </div>
-        </div>
 
-        <!-- Сертификаты -->
-        <div class="col-lg-4 mt-4 mt-lg-0">
-            <div class="card shadow border-0 rounded-4 h-100">
-                <div class="card-header bg-light">
-                    <strong><i class="fas fa-certificate me-2 text-primary"></i>Сертификаты</strong>
-                </div>
-                <ul class="list-group list-group-flush">
-                    @foreach (var c in Model.Certificates)
-                    {
-                        <li class="list-group-item">@c.Name</li>
-                    }
-                </ul>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_Education", Model.educations)
+    @await Html.PartialAsync("_PROJECTS", Model.Projects)
+    @await Html.PartialAsync("_Skills", Model.Skills)
+    @await Html.PartialAsync("_CertificatesPartial", Model.Certificates)
+</div>
+<!-- Модальное окно для предложения работы -->
+<div class="modal fade" id="jobOfferModal" tabindex="-1" aria-labelledby="jobOfferModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title" id="jobOfferModalLabel">
+                    💼 Предложить работу
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
             </div>
-        </div>
-
-        <!-- Опыт -->
-        <div class="col-lg-4 mt-4 mt-lg-0">
-            <div class="card shadow border-0 rounded-4 h-100">
-                <div class="card-header bg-light">
-                    <strong><i class="fas fa-briefcase me-2 text-primary"></i>Опыт работы</strong>
-                </div>
-                <ul class="list-group list-group-flush">
-                    @foreach (var e in Model.experiences)
-                    {
-                        <li class="list-group-item">@e.Description</li>
-                    }
-                </ul>
+            <div class="modal-body">
+                <form method="post" asp-action="SubmitJobOffer">
+                    <div class="mb-3">
+                        <label for="CompanyName" class="form-label fw-semibold">Компания</label>
+                        <input type="text" class="form-control" name="CompanyName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="JobDescription" class="form-label fw-semibold">Описание предложения</label>
+                        <textarea class="form-control" name="JobDescription" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ContactEmail" class="form-label fw-semibold">Контактный Email</label>
+                        <input type="email" class="form-control" name="ContactEmail" required />
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-paper-plane me-2"></i>Отправить предложение
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+

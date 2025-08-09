@@ -7,6 +7,7 @@ using PortofolioKazhuro.ViewModel;
 
 namespace PortofolioKazhuro.Controllers
 {
+    [IpFilter("192.168.31.149", "::1")]
     public class AdminController : Controller
     {
         private readonly PortfolioContext _context;
@@ -30,7 +31,7 @@ namespace PortofolioKazhuro.Controllers
             var profile = await _context.Profiles.FirstOrDefaultAsync();
             var educations = await _context.Educations.ToListAsync();
             var projects = await _context.Projects.ToListAsync();
-            var skills = await _context.skillCategories.Include(s =>s.Skills).ToListAsync();
+            var skills = await _context.skillCategories.Include(s => s.Skills).ToListAsync();
             var certificates = await _context.Certificates.ToListAsync();
             var experiences = await _context.Experiences.ToListAsync();
 
@@ -124,7 +125,10 @@ namespace PortofolioKazhuro.Controllers
                     Name = vm.Profile.Name,
                     Surname = vm.Profile.Surname,
                     Patronymic = vm.Profile.Patronymic,
+                    Birthday = vm.Profile.Birthday,
                     Email = vm.Profile.Email,
+                    RabEmail = vm.Profile.RabEmail,
+                    RabEmailPass = vm.Profile.RabEmailPass,
                     GitHubUrl = vm.Profile.GitHubUrl,
                     LeetCodeUrl = vm.Profile.LeetCodeUrl,
                     LinkedinUrl = vm.Profile.LinkedinUrl,
@@ -141,7 +145,10 @@ namespace PortofolioKazhuro.Controllers
                 profile.Name = vm.Profile.Name;
                 profile.Surname = vm.Profile.Surname;
                 profile.Patronymic = vm.Profile.Patronymic;
+                profile.Birthday = vm.Profile.Birthday;
                 profile.Email = vm.Profile.Email;
+                profile.RabEmail = vm.Profile.RabEmail;
+                profile.RabEmailPass = vm.Profile.RabEmailPass;
                 profile.PhoneNumber = vm.Profile.PhoneNumber;
                 profile.GitHubUrl = vm.Profile.GitHubUrl;
                 profile.LeetCodeUrl = vm.Profile.LeetCodeUrl;
@@ -270,7 +277,7 @@ namespace PortofolioKazhuro.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-       
+
 
         // ----- ПРОЕКТЫ -----
 
@@ -379,7 +386,7 @@ namespace PortofolioKazhuro.Controllers
             return RedirectToAction("Index");
         }
         [HttpPost]
-        public async Task<IActionResult> AddSkill (string Name, int Proficiency, int SkillCategoryId) 
+        public async Task<IActionResult> AddSkill(string Name, int Proficiency, int SkillCategoryId)
         {
             if (string.IsNullOrWhiteSpace(Name) || Proficiency < 0 || Proficiency > 100)
             {

@@ -120,7 +120,30 @@
                                 <input asp-for="Profile.Email" class="form-control" placeholder="Email" />
                                 <span asp-validation-for="Profile.Email" class="text-danger small"></span>
                             </div>
-
+                            <!-- Email -->
+                            <div class="col-12 col-md-6">
+                                <label asp-for="Profile.RabEmail" class="form-label fw-semibold">
+                                    <i class="fas fa-envelope me-2 text-secondary"></i>Рабочий Email
+                                </label>
+                                <input asp-for="Profile.RabEmail" class="form-control" placeholder="Рабочий Email" />
+                                <span asp-validation-for="Profile.RabEmail" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12 col-md-6 position-relative">
+                                <label asp-for="Profile.RabEmailPass" class="form-label fw-semibold">
+                                    <i class="fas fa-lock me-2 text-secondary"></i>Пароль от Рабочий Email
+                                </label>
+                                <div class="input-group">
+                                    <input asp-for="Profile.RabEmailPass"
+                                           type="password"
+                                           class="form-control"
+                                           placeholder="Пароль от Рабочий Email"
+                                           id="emailPassField" />
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()" title="Показать/скрыть пароль">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Profile.RabEmailPass" class="text-danger small"></span>
+                            </div>
                             <!-- Телефон -->
                             <div class="col-12 col-md-6">
                                 <label asp-for="Profile.PhoneNumber" class="form-label fw-semibold">
@@ -203,3 +226,18 @@
     <!-- LOGS -->
     @await Html.PartialAsync("_Logs", Model.Logs)
 </div>
+<script>
+    function togglePassword() {
+        const field = document.getElementById('emailPassField');
+        const icon = document.getElementById('toggleIcon');
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            field.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+</script>

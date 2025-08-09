@@ -45,8 +45,8 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<PortfolioContext>();
-        db.Database.EnsureDeleted();
-        db.Database.EnsureCreated();
+        db.Database.Migrate();
+
     }
 
 
@@ -58,6 +58,27 @@ try
     }
 
     app.UseHttpsRedirection();
+    app.Use(async (context, next) =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString();
+        var allowedAdminIps = new[] { "::1", "192.168.31.149" };
+
+        // Проверка: если запрашивают корень и IP админский
+        if (context.Request.Path == "/" && allowedAdminIps.Contains(ip))
+        {
+            context.Response.Redirect("/Admin");
+            return;
+        }
+
+        // Если не админ — редирект на Home
+        if (context.Request.Path == "/" && !allowedAdminIps.Contains(ip))
+        {
+            context.Response.Redirect("/Home");
+            return;
+        }
+
+        await next();
+    });
     app.UseRouting();
     app.UseAuthorization();
     app.UseStaticFiles();

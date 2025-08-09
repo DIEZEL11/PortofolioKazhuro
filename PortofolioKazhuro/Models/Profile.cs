@@ -17,6 +17,8 @@ namespace PortofolioKazhuro.Models
         public string? TelegramUrl { get; set; }
         public string? About { get; set; }
         public string? Email { get; set; }
+        public string? RabEmail { get; set; }
+        public string? RabEmailPass { get; set; }
         [Phone(ErrorMessage = "Введите корректный номер телефона")]
         [StringLength(13, ErrorMessage = "Номер телефона не должен превышать 20 символов")]
         public string? PhoneNumber { get; set; }
