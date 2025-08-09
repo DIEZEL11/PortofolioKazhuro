@@ -134,7 +134,10 @@ namespace PortofolioKazhuro.Controllers
                     LinkedinUrl = vm.Profile.LinkedinUrl,
                     TelegramUrl = vm.Profile.TelegramUrl,
                     PhoneNumber = vm.Profile.PhoneNumber,
-                    About = vm.Profile.About
+                    About = vm.Profile.About,
+                    TelegramTokenBot = vm.Profile.TelegramTokenBot,
+                    TelegramChatIdBot = vm.Profile.TelegramChatIdBot,
+                    
                 };
                 //TempData["ErrorMessage"] = "Профиль не найден.";
                 //return RedirectToAction(nameof(Index));
@@ -155,6 +158,8 @@ namespace PortofolioKazhuro.Controllers
                 profile.LinkedinUrl = vm.Profile.LinkedinUrl;
                 profile.TelegramUrl = vm.Profile.TelegramUrl;
                 profile.About = vm.Profile.About;
+                profile.TelegramChatIdBot= vm.Profile.TelegramChatIdBot;
+                profile.TelegramTokenBot= vm.Profile.TelegramTokenBot;
             }
             // Если загружен новый файл
             if (vm.PhotoFile != null && vm.PhotoFile.Length > 0)

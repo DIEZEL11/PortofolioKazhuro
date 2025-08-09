@@ -23,5 +23,8 @@ namespace PortofolioKazhuro.Models
         [StringLength(13, ErrorMessage = "Номер телефона не должен превышать 20 символов")]
         public string? PhoneNumber { get; set; }
 
+        public string? TelegramTokenBot { get; set; }
+        public string? TelegramChatIdBot { get; set; }
+
     }
 }

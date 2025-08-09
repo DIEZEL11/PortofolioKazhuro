@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortofolioKazhuro.Context;
+using PortofolioKazhuro.Serviceces;
 using Serilog;
 
 try
@@ -39,6 +40,8 @@ try
     // 👇 Регистрация сервисов
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddControllersWithViews();
+    builder.Services.AddHttpClient<TelegramService>();
+    builder.Services.AddSingleton<MailService>();
     //builder.WebHost.UseUrls("https://0.0.0.0:6688");
     var app = builder.Build();
     // Program.cs или Startup.cs

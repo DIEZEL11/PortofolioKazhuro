@@ -2,10 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using PortofolioKazhuro.Context;
 using PortofolioKazhuro.Models;
+using PortofolioKazhuro.Serviceces;
 using PortofolioKazhuro.ViewModel;
 using System.Diagnostics;
-using System.Net;
-using System.Net.Mail;
 
 namespace PortofolioKazhuro.Controllers
 {
@@ -13,12 +12,13 @@ namespace PortofolioKazhuro.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly PortfolioContext _context;
-
-        public HomeController(ILogger<HomeController> logger, PortfolioContext context)
+        private readonly TelegramService _telegram;
+        private readonly MailService _mail;
+        public HomeController(ILogger<HomeController> logger, TelegramService telegram, MailService mail, PortfolioContext context)
         {
             _context = context;
-
-
+            _telegram = telegram;
+            _mail = mail;
             _logger = logger;
         }
 
@@ -36,68 +36,79 @@ namespace PortofolioKazhuro.Controllers
             return View(model);
         }
         [HttpPost]
-        [HttpPost]
+
         public async Task<IActionResult> SubmitJobOffer(JobOfferViewModel offer)
         {
-            if (!ModelState.IsValid)
+            if (offer == null || !ModelState.IsValid)
                 return BadRequest("Некорректные данные.");
 
-            // Получаем профиль пользователя (можно через сервис или из БД)
-            var profile = await _context.Profiles.FirstOrDefaultAsync(); // или .FindAsync(id)
-
+            var profile = await _context.Profiles.FirstOrDefaultAsync();
             if (profile == null)
                 return NotFound("Профиль не найден.");
 
-            var message = $"🔔 Новое предложение работы\n\n" +
-                          $"🏢 Компания: {offer.CompanyName}\n" +
-                          $"📝 Описание: {offer.JobDescription}\n" +
-                          $"📬 Контакт отправителя: {offer.ContactEmail}";
+            var message = $"""
+        🔔 *Новое предложение работы*
 
-            // Отправка на Email
-            if (!string.IsNullOrWhiteSpace(profile.Email))
-            {
-                await SendEmailAsync(profile.Email,profile.RabEmail,profile.RabEmailPass, "Новое предложение работы", message);
-            }
+        🏢 *Компания:* {offer.CompanyName}
+        📝 *Описание:* {offer.JobDescription}
+        💰 *Зарплата:* {offer.SalaryFrom}–{offer.SalaryTo} {offer.Currency}
+        📍 *Формат работы:* {offer.WorkFormat}
+        📅 *Срок отклика:* {offer.ResponseDeadline:dd.MM.yyyy}
+        📬 *Контакт:* {offer.ContactEmail}
+        """;
 
-            // Отправка в Telegram
-            if (!string.IsNullOrWhiteSpace(profile.TelegramUrl))
-            {
-                var username = profile.TelegramUrl.Replace("https://t.me/", "").TrimStart('@');
-                await SendTelegramAsync("YOUR_BOT_TOKEN", "@" + username, message);
-            }
+            bool telegramSent = false;
+            bool mailSent = false;
 
-            return Ok("Предложение отправлено.");
-        }
-
-        private async Task SendEmailAsync(string toEmail,string rabMail,string rabMailPass ,string subject, string body)
-        {
             try
             {
-                using var smtp = new SmtpClient("smtp.gmail.com")
+                if (!string.IsNullOrWhiteSpace(profile.RabEmail) &&
+                    !string.IsNullOrWhiteSpace(profile.RabEmailPass) &&
+                    !string.IsNullOrWhiteSpace(profile.Email))
                 {
-                    Port = 587,
-                    Credentials = new NetworkCredential(rabMail, rabMailPass),
-                    EnableSsl = true
-                };
-                var mail = new MailMessage("Sergevm88@gmail.com", toEmail, subject, body);
-                await smtp.SendMailAsync(mail);
+                    mailSent = await _mail.SendEmailAsync(
+                         toEmail: profile.Email,
+                       rabMail: profile.RabEmail,
+                        rabMailPass: profile.RabEmailPass,
+                        subject: "Новое предложение работы",
+                        body: message
+                    );
+                }
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, "Ошибка при отправке email.");
             }
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(profile.TelegramTokenBot) &&
+                    !string.IsNullOrWhiteSpace(profile.TelegramChatIdBot))
+                {
+                    telegramSent = await _telegram.SendMessageAsync(
+                       botToken: profile.TelegramTokenBot,
+                        chatId: profile.TelegramChatIdBot,
+                        message: message
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отправке сообщения в Telegram.");
+            }
+
+            TempData["Success"] = telegramSent
+                ? "Предложение отправлено через Telegram."
+                : "Предложение не удалось отправить через Telegram.";
+
+            if (!mailSent)
+                TempData["MailWarning"] = "Email не был отправлен.";
+
+            return RedirectToAction("Index");
         }
-        private async Task SendTelegramAsync(string botToken, string chatId, string message)
-        {
-            var url = $"https://api.telegram.org/bot{botToken}/sendMessage";
-            using var client = new HttpClient();
-            var payload = new Dictionary<string, string>
-    {
-        { "chat_id", chatId },
-        { "text", message }
-    };
-            await client.PostAsync(url, new FormUrlEncodedContent(payload));
-        }
+
+
+
 
         public IActionResult Privacy()
         {

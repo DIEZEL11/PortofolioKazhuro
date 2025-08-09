@@ -9,6 +9,23 @@
     ViewData["Title"] = "Обо мне";
     Layout = "_Layout";
 }
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+}
 <style>
     .profile-glass-card {
         display: grid;
@@ -247,14 +264,43 @@
                         <label for="CompanyName" class="form-label fw-semibold">Компания</label>
                         <input type="text" class="form-control" name="CompanyName" required />
                     </div>
+
                     <div class="mb-3">
                         <label for="JobDescription" class="form-label fw-semibold">Описание предложения</label>
                         <textarea class="form-control" name="JobDescription" rows="4" required></textarea>
                     </div>
+
                     <div class="mb-3">
                         <label for="ContactEmail" class="form-label fw-semibold">Контактный Email</label>
                         <input type="email" class="form-control" name="ContactEmail" required />
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">💰 Зарплатная вилка</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="SalaryFrom" placeholder="От" min="0" required />
+                            <input type="number" class="form-control" name="SalaryTo" placeholder="До" min="0" required />
+                            <select class="form-select" name="Currency" required>
+                                <option value="BYN">BYN</option>
+                                <option value="USD">$</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ResponseDeadline" class="form-label fw-semibold">📅 Срок отклика</label>
+                        <input type="date" class="form-control" name="ResponseDeadline" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="WorkFormat" class="form-label fw-semibold">📍 Формат работы</label>
+                        <select class="form-select" name="WorkFormat" required>
+                            <option value="Удалённо">Удалённо</option>
+                            <option value="Офис">Офис</option>
+                            <option value="Гибрид">Гибрид</option>
+                        </select>
+                    </div>
+
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-paper-plane me-2"></i>Отправить предложение
                     </button>
@@ -263,5 +309,6 @@
         </div>
     </div>
 </div>
+
 
 
