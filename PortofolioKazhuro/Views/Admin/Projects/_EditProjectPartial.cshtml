@@ -1,0 +1,23 @@
+﻿@model PortofolioKazhuro.Models.Project
+
+<form asp-action="EditProject" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.Id" />
+
+    <div class="mb-3">
+        <label for="Title" class="form-label">Название</label>
+        <input id="Title" name="Title" value="@Model.Title" class="form-control" required />
+    </div>
+
+    <div class="mb-3">
+        <label for="Description" class="form-label">Описание</label>
+        <textarea id="Description" name="Description" class="form-control">@Model.Description</textarea>
+    </div>
+
+    <div class="mb-3">
+        <label for="GitHubUrl" class="form-label">Ссылка на GitHub</label>
+        <input id="GitHubUrl" name="GitHubUrl" value="@Model.GitHubUrl" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Сохранить</button>
+</form>

@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PortofolioKazhuro.Context;
 using PortofolioKazhuro.Models;
 
 public class VisitorLoggingMiddleware

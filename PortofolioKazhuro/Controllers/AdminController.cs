@@ -1,13 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using PortofolioKazhuro.Context;
 using PortofolioKazhuro.Models;
+using PortofolioKazhuro.Models.Language;
 using PortofolioKazhuro.ViewModel;
 
 namespace PortofolioKazhuro.Controllers
 {
-    [IpFilter("192.168.31.149", "::1")]
+    [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
         private readonly PortfolioContext _context;
@@ -21,6 +23,136 @@ namespace PortofolioKazhuro.Controllers
             _logger.LogInformation("Инициализация AdminController");
             _environment = environment;
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditLanguage(LanguageSkill model)
+        {
+           
+            //if (!ModelState.IsValid)
+            //{
+            //    // Вернуть ошибку или обновить данные с ошибками валидации
+            //    TempData["Error"] = "Ошибка валидации данных.";
+            //    return RedirectToAction("Index"); // Или вернуть View с моделью, если нужно
+            //}
+
+            var languageSkill = await _context.LanguageSkills.FindAsync(model.Id);
+            if (languageSkill == null)
+            {
+                TempData["Error"] = "Язык не найден.";
+                return RedirectToAction("Index");
+            }
+
+            // Обновляем поля
+            languageSkill.LanguageName = model.LanguageName;
+            languageSkill.LanguageLevelId = model.LanguageLevelId;
+            languageSkill.Description = model.Description;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Данные успешно обновлены.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при обновлении языка");
+                TempData["Error"] = "Произошла ошибка при сохранении данных.";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        // Helper: частичный список
+        private async Task<PartialViewResult> RenderListAsync()
+        {
+            var items = await _context.LanguageSkills
+                .Include(x => x.LanguageLevel)
+                .OrderBy(x => x.LanguageName)
+                .ToListAsync();
+
+            return PartialView("_LanguageList", items);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateLanguage(LanguageSkillCreateVm vm)
+        {
+            _logger.LogInformation("Create: входящий запрос. LanguageName={LanguageName}, LevelId={LevelId}", vm?.LanguageName, vm?.LanguageLevelId);
+
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                _logger.LogWarning("Create: невалидная модель. Ошибки: {Errors}", errors);
+                return UnprocessableEntity(ModelState);
+            }
+
+            try
+            {
+                var exists = await _context.LanguageSkills
+                    .AnyAsync(x => x.LanguageName == vm.LanguageName && x.LanguageLevelId == vm.LanguageLevelId);
+
+                if (exists)
+                {
+                    _logger.LogWarning("Create: дубликат. Язык '{LanguageName}' с уровнем {LevelId} уже существует", vm.LanguageName, vm.LanguageLevelId);
+                    ModelState.AddModelError(nameof(vm.LanguageName), "Уже добавлен такой язык с этим уровнем.");
+                    return UnprocessableEntity(ModelState);
+                }
+
+                var entity = new LanguageSkill
+                {
+                    LanguageName = vm.LanguageName.Trim(),
+                    Description = vm.Description?.Trim(),
+                    LanguageLevelId = vm.LanguageLevelId
+                };
+
+                _context.LanguageSkills.Add(entity);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Create: успешно создан LanguageSkill Id={Id}, Name={LanguageName}", entity.Id, entity.LanguageName);
+
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Create: ошибка при создании LanguageSkill. Payload: {@Vm}", vm);
+                return Problem("Произошла ошибка при создании языка.");
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteLanguage(int id)
+        {
+            _logger.LogInformation("Delete: входящий запрос. Id={Id}", id);
+
+            try
+            {
+                var item = await _context.LanguageSkills
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (item == null)
+                {
+                    _logger.LogWarning("Delete: LanguageSkill не найден. Id={Id}", id);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Delete: найден LanguageSkill Id={Id}, Name={Name}, Certificates={CertCount}",
+                    item.Id, item.LanguageName);
+
+                _context.LanguageSkills.Remove(item);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Delete: успешно удалён LanguageSkill Id={Id}", id);
+
+                _logger.LogDebug("Delete: рендер списка после удаления");
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Delete: ошибка при удалении LanguageSkill Id={Id}", id);
+                return Problem("Произошла ошибка при удалении языка.");
+            }
+        }
+
+
 
         // GET: /Admin
         public async Task<IActionResult> Index(string logLevel)
@@ -31,10 +163,14 @@ namespace PortofolioKazhuro.Controllers
             var profile = await _context.Profiles.FirstOrDefaultAsync();
             var educations = await _context.Educations.ToListAsync();
             var projects = await _context.Projects.ToListAsync();
-            var skills = await _context.skillCategories.Include(s => s.Skills).ToListAsync();
+            var skills = await _context.SkillCategories.Include(s => s.Skills).ToListAsync();
             var certificates = await _context.Certificates.ToListAsync();
-            var experiences = await _context.Experiences.ToListAsync();
+            var experiences = await _context.WorkExperiences.ToListAsync();
+            var languages = await _context.LanguageSkills
+                        .Include(ls => ls.LanguageLevel)
+                        .ToListAsync();
 
+            ViewData["LanguageLevels"] = new SelectList(await _context.LanguageLevels.ToListAsync(), "Id", "Name");
             // 2. Группируем статистику по IP
             var allVisits = _context.VisitorStats.AsNoTracking();
             var groups = await allVisits
@@ -86,6 +222,7 @@ namespace PortofolioKazhuro.Controllers
                 Skills = skills,
                 Certificates = certificates,
                 experiences = experiences,
+                LanguageSkills = languages,
                 visitorStats = new VisitorStatsViewModel
                 {
                     Groups = groups,
@@ -97,7 +234,7 @@ namespace PortofolioKazhuro.Controllers
             if (profile == null)
             {
                 _logger.LogWarning("Профиль не найден, создайте профиль в базе данных");
-                TempData["ErrorMessage"] = "Профиль не найден. Пожалуйста, создайте профиль в базе данных.";
+                TempData["Error"] = "Профиль не найден. Пожалуйста, создайте профиль в базе данных.";
             }
 
             _logger.LogInformation("Данные для админской панели успешно загружены");
@@ -112,7 +249,7 @@ namespace PortofolioKazhuro.Controllers
         {
             //if (!ModelState.IsValid)
             //{
-            //    TempData["ErrorMessage"] = "Проверьте заполненные поля.";
+            //    TempData["Error"] = "Проверьте заполненные поля.";
             //    return RedirectToAction(nameof(Index));
             //}
 
@@ -137,7 +274,7 @@ namespace PortofolioKazhuro.Controllers
                     About = vm.Profile.About,
                     TelegramTokenBot = vm.Profile.TelegramTokenBot,
                     TelegramChatIdBot = vm.Profile.TelegramChatIdBot,
-                    
+
                 };
                 //TempData["ErrorMessage"] = "Профиль не найден.";
                 //return RedirectToAction(nameof(Index));
@@ -158,8 +295,8 @@ namespace PortofolioKazhuro.Controllers
                 profile.LinkedinUrl = vm.Profile.LinkedinUrl;
                 profile.TelegramUrl = vm.Profile.TelegramUrl;
                 profile.About = vm.Profile.About;
-                profile.TelegramChatIdBot= vm.Profile.TelegramChatIdBot;
-                profile.TelegramTokenBot= vm.Profile.TelegramTokenBot;
+                profile.TelegramChatIdBot = vm.Profile.TelegramChatIdBot;
+                profile.TelegramTokenBot = vm.Profile.TelegramTokenBot;
             }
             // Если загружен новый файл
             if (vm.PhotoFile != null && vm.PhotoFile.Length > 0)
@@ -180,7 +317,7 @@ namespace PortofolioKazhuro.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка обновления профиля");
-                TempData["ErrorMessage"] = "Не удалось сохранить профиль.";
+                TempData["Error"] = "Не удалось сохранить профиль.";
             }
 
             return RedirectToAction(nameof(Index));
@@ -198,9 +335,9 @@ namespace PortofolioKazhuro.Controllers
 
             if (!ModelState.IsValid)
             {
-                var educations = _context.Educations.ToList();
-                ViewBag.Error = "Пожалуйста, исправьте ошибки.";
-                return View("Index", educations);
+
+                TempData["Error"] = "Пожалуйста, исправьте ошибки.";
+                return RedirectToAction("Index");
             }
 
             _context.Educations.Add(model);
@@ -220,6 +357,14 @@ namespace PortofolioKazhuro.Controllers
             return RedirectToAction("Index");
         }
 
+        [HttpGet]
+        public IActionResult EditEducation(int id)
+        {
+            var edu = _context.Educations.Find(id);
+            if (edu == null) return NotFound();
+
+            return PartialView("Education/_EditEducationPartial", edu); // ✅ передаём один Education
+        }
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult EditEducation(Education model)
@@ -228,7 +373,7 @@ namespace PortofolioKazhuro.Controllers
             {
                 var educations = _context.Educations.ToList();
                 ViewBag.Error = "Ошибка при редактировании.";
-                return View("Index", educations);
+                return View("Index");
             }
 
             var edu = _context.Educations.Find(model.Id);
@@ -318,8 +463,12 @@ namespace PortofolioKazhuro.Controllers
         public IActionResult EditProject(int id)
         {
             var project = _context.Projects.Find(id);
-            return project == null ? NotFound() : View(project);
+            if (project == null)
+                return NotFound();
+
+            return PartialView("Projects/_EditProjectPartial", project);
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -371,7 +520,7 @@ namespace PortofolioKazhuro.Controllers
         {
             if (string.IsNullOrWhiteSpace(CategoryName) || string.IsNullOrWhiteSpace(SkillName) || Proficiency < 0 || Proficiency > 100)
             {
-                TempData["ErrorMessage"] = "Введите корректные данные.";
+                TempData["Error"] = "Введите корректные данные.";
                 return RedirectToAction("Index");
             }
 
@@ -383,11 +532,11 @@ namespace PortofolioKazhuro.Controllers
                 SkillCategory = category
             };
 
-            _context.skillCategories.Add(category);
+            _context.SkillCategories.Add(category);
             _context.Skills.Add(skill);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Категория и навык успешно добавлены.";
+            TempData["Error"] = "Категория и навык успешно добавлены.";
             return RedirectToAction("Index");
         }
         [HttpPost]
@@ -395,10 +544,10 @@ namespace PortofolioKazhuro.Controllers
         {
             if (string.IsNullOrWhiteSpace(Name) || Proficiency < 0 || Proficiency > 100)
             {
-                TempData["ErrorMessage"] = "Введите корректные данные.";
+                TempData["Error"] = "Введите корректные данные.";
                 return RedirectToAction("Index");
             }
-            var result = await _context.skillCategories
+            var result = await _context.SkillCategories
                 .FirstOrDefaultAsync(c => c.Id == SkillCategoryId);
             var skill = new Skill
             {
@@ -409,7 +558,7 @@ namespace PortofolioKazhuro.Controllers
             _context.Skills.Add(skill);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Навык успешно добавлен.";
+            TempData["Error"] = "Навык успешно добавлен.";
             return RedirectToAction("Index");
         }
         [HttpPost]
@@ -440,7 +589,7 @@ namespace PortofolioKazhuro.Controllers
         [HttpPost]
         public async Task<IActionResult> EditCategory(int CategoryId, string NewName)
         {
-            var category = await _context.skillCategories.FindAsync(CategoryId);
+            var category = await _context.SkillCategories.FindAsync(CategoryId);
             if (category != null)
             {
                 category.Name = NewName;
@@ -451,14 +600,14 @@ namespace PortofolioKazhuro.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteCategory(int CategoryId)
         {
-            var category = await _context.skillCategories
+            var category = await _context.SkillCategories
                 .Include(c => c.Skills)
                 .FirstOrDefaultAsync(c => c.Id == CategoryId);
 
             if (category != null)
             {
                 _context.Skills.RemoveRange(category.Skills); // сначала удалить навыки
-                _context.skillCategories.Remove(category);
+                _context.SkillCategories.Remove(category);
                 await _context.SaveChangesAsync();
             }
             return RedirectToAction("Index");
@@ -468,22 +617,22 @@ namespace PortofolioKazhuro.Controllers
         {
             if (string.IsNullOrWhiteSpace(CategoryName))
             {
-                TempData["ErrorMessage"] = "Название категории не может быть пустым.";
+                TempData["Error"] = "Название категории не может быть пустым.";
                 return RedirectToAction("Index");
             }
 
-            var exists = await _context.skillCategories.AnyAsync(c => c.Name == CategoryName);
+            var exists = await _context.SkillCategories.AnyAsync(c => c.Name == CategoryName);
             if (exists)
             {
-                TempData["ErrorMessage"] = "Такая категория уже существует.";
+                TempData["Error"] = "Такая категория уже существует.";
                 return RedirectToAction("Index");
             }
 
             var category = new SkillCategory { Name = CategoryName };
-            _context.skillCategories.Add(category);
+            _context.SkillCategories.Add(category);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Категория успешно добавлена.";
+            TempData["Error"] = "Категория успешно добавлена.";
             return RedirectToAction("Index");
         }
 
@@ -630,62 +779,81 @@ namespace PortofolioKazhuro.Controllers
 
 
         // ----- ОПЫТ РАБОТЫ -----
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddExperience(string description)
+        public IActionResult AddWorkExperience(string Company, string Position, DateTime? DateStart, DateTime? DateEnd, string? Description)
         {
-            _logger.LogInformation("Добавление опыта: {Description}", description);
+            if (string.IsNullOrWhiteSpace(Company) || string.IsNullOrWhiteSpace(Position))
+            {
+                ModelState.AddModelError("", "Компания и должность обязательны");
+                // Можно вернуть на Index или показать ошибку иначе
+                return RedirectToAction(nameof(Index));
+            }
 
-            if (string.IsNullOrWhiteSpace(description))
+            var work = new WorkExperience
             {
-                _logger.LogWarning("Попытка добавить пустой опыт работы");
-            }
-            else
-            {
-                try
-                {
-                    await _context.Experiences.AddAsync(new Experience { Description = description });
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Опыт работы добавлен");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при добавлении опыта работы");
-                    TempData["Error"] = "Не удалось добавить опыт работы.";
-                }
-            }
+                Company = Company,
+                Position = Position,
+                DateStart = DateStart,
+                DateEnd = DateEnd,
+                Description = Description
+            };
+
+            _context.WorkExperiences.Add(work);
+            _context.SaveChanges();
 
             return RedirectToAction(nameof(Index));
         }
 
+        // Редактирование (GET)
+        public IActionResult EditWorkExperience(int id)
+        {
+            var work = _context.WorkExperiences.Find(id);
+            if (work == null) return NotFound();
+
+            return View(work); // Создай соответствующее View или Partial для редактирования
+        }
+
+        // Редактирование (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteExperience(int id)
+        public IActionResult EditWorkExperience(int id, string Company, string Position, DateTime? DateStart, DateTime? DateEnd, string? Description)
         {
-            _logger.LogInformation("Удаление опыта работы (Id: {Id})", id);
+            var work = _context.WorkExperiences.Find(id);
+            if (work == null) return NotFound();
 
-            var exp = await _context.Experiences.FindAsync(id);
-            if (exp == null)
+            if (string.IsNullOrWhiteSpace(Company) || string.IsNullOrWhiteSpace(Position))
             {
-                _logger.LogWarning("Опыт работы не найден для удаления (Id: {Id})", id);
+                ModelState.AddModelError("", "Компания и должность обязательны");
+                return View(work);
             }
-            else
+
+            work.Company = Company;
+            work.Position = Position;
+            work.DateStart = DateStart;
+            work.DateEnd = DateEnd;
+            work.Description = Description;
+
+            _context.SaveChanges();
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Удаление
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteWorkExperience(int id)
+        {
+            var work = _context.WorkExperiences.Find(id);
+            if (work != null)
             {
-                try
-                {
-                    _context.Experiences.Remove(exp);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Опыт работы удалён (Id: {Id})", id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при удалении опыта работы (Id: {Id})", id);
-                    TempData["Error"] = "Не удалось удалить опыт работы.";
-                }
+                _context.WorkExperiences.Remove(work);
+                _context.SaveChanges();
             }
 
             return RedirectToAction(nameof(Index));
         }
     }
+
 }
+

@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PortofolioKazhuro.Context;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using PortofolioKazhuro.Serviceces;
 using Serilog;
 
@@ -7,10 +8,18 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(options =>
+        {
+            options.LoginPath = "/Account/Login";
+            options.AccessDeniedPath = "/Account/AccessDenied";
+        });
+
     // 👇 Формируем путь к файлу БД и подключаем её
     var dbFileName = "portfolio.db";
     var dbLogFileName = "Logs.db";
-    var dbPath = Path.Combine(AppContext.BaseDirectory, dbFileName);
+    var dbPath = Path.Combine(AppContext.BaseDirectory + "\\DB", dbFileName);
+    //var dbPath = Path.Combine(AppContext.BaseDirectory, dbFileName);
     var dbLogsPath = Path.Combine(AppContext.BaseDirectory, dbLogFileName);
     var connectionString = $"Data Source={dbPath}";
     builder.Services.AddDbContext<PortfolioContext>(options =>
@@ -42,15 +51,15 @@ try
     builder.Services.AddControllersWithViews();
     builder.Services.AddHttpClient<TelegramService>();
     builder.Services.AddSingleton<MailService>();
-    //builder.WebHost.UseUrls("https://0.0.0.0:6688");
+    builder.WebHost.UseUrls("https://0.0.0.0:6688");
     var app = builder.Build();
     // Program.cs или Startup.cs
-    using (var scope = app.Services.CreateScope())
-    {
-        var db = scope.ServiceProvider.GetRequiredService<PortfolioContext>();
-        db.Database.Migrate();
+    //using (var scope = app.Services.CreateScope())
+    //{
+    //    var db = scope.ServiceProvider.GetRequiredService<PortfolioContext>();
+    //    db.Database.Migrate();
 
-    }
+    //}
 
 
     // 👇 Конфигурация пайплайна
@@ -61,28 +70,9 @@ try
     }
 
     app.UseHttpsRedirection();
-    app.Use(async (context, next) =>
-    {
-        var ip = context.Connection.RemoteIpAddress?.ToString();
-        var allowedAdminIps = new[] { "::1", "192.168.31.149" };
 
-        // Проверка: если запрашивают корень и IP админский
-        if (context.Request.Path == "/" && allowedAdminIps.Contains(ip))
-        {
-            context.Response.Redirect("/Admin");
-            return;
-        }
-
-        // Если не админ — редирект на Home
-        if (context.Request.Path == "/" && !allowedAdminIps.Contains(ip))
-        {
-            context.Response.Redirect("/Home");
-            return;
-        }
-
-        await next();
-    });
     app.UseRouting();
+    app.UseAuthentication();
     app.UseAuthorization();
     app.UseStaticFiles();
     app.UseMiddleware<VisitorLoggingMiddleware>();
@@ -91,15 +81,19 @@ try
     app.MapStaticAssets();
 
     // 👇 Маршруты
+
+    app.MapControllerRoute(
+    name: "home",
+    pattern: "{controller=Home}/{action=Index}/{id?}")
+    .WithStaticAssets();
+
+
     app.MapControllerRoute(
         name: "admin",
         pattern: "{controller=Admin}/{action=Index}/{id?}")
         .WithStaticAssets();
 
-    app.MapControllerRoute(
-        name: "home",
-        pattern: "{controller=Home}/{action=Index}/{id?}")
-        .WithStaticAssets();
+
 
     app.Run();
 }

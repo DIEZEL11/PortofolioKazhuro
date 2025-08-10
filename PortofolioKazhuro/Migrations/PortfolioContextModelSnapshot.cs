@@ -3,7 +3,6 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using PortofolioKazhuro.Context;
 
 #nullable disable
 
@@ -85,6 +84,87 @@ namespace PortofolioKazhuro.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Experiences");
+                });
+
+            modelBuilder.Entity("PortofolioKazhuro.Models.Language.LanguageLevel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LanguageLevels");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "A1 — Beginner"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "A2 — Elementary"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "B1 — Intermediate"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "B2 — Upper Intermediate"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Name = "C1 — Advanced"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Name = "C2 — Proficient"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Name = "Native"
+                        });
+                });
+
+            modelBuilder.Entity("PortofolioKazhuro.Models.Language.LanguageSkill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LanguageLevelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LanguageName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LanguageLevelId");
+
+                    b.HasIndex("LanguageName", "LanguageLevelId")
+                        .IsUnique();
+
+                    b.ToTable("LanguageSkills");
                 });
 
             modelBuilder.Entity("PortofolioKazhuro.Models.Profile", b =>
@@ -217,7 +297,7 @@ namespace PortofolioKazhuro.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("skillCategories");
+                    b.ToTable("SkillCategories");
                 });
 
             modelBuilder.Entity("PortofolioKazhuro.Models.VisitorStat", b =>
@@ -238,6 +318,17 @@ namespace PortofolioKazhuro.Migrations
                     b.ToTable("VisitorStats");
                 });
 
+            modelBuilder.Entity("PortofolioKazhuro.Models.Language.LanguageSkill", b =>
+                {
+                    b.HasOne("PortofolioKazhuro.Models.Language.LanguageLevel", "LanguageLevel")
+                        .WithMany("Skills")
+                        .HasForeignKey("LanguageLevelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LanguageLevel");
+                });
+
             modelBuilder.Entity("PortofolioKazhuro.Models.Skill", b =>
                 {
                     b.HasOne("PortofolioKazhuro.Models.SkillCategory", "SkillCategory")
@@ -247,6 +338,11 @@ namespace PortofolioKazhuro.Migrations
                         .IsRequired();
 
                     b.Navigation("SkillCategory");
+                });
+
+            modelBuilder.Entity("PortofolioKazhuro.Models.Language.LanguageLevel", b =>
+                {
+                    b.Navigation("Skills");
                 });
 
             modelBuilder.Entity("PortofolioKazhuro.Models.SkillCategory", b =>

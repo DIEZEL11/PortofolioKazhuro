@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PortofolioKazhuro.Context;
 using PortofolioKazhuro.Models;
 using PortofolioKazhuro.Serviceces;
 using PortofolioKazhuro.ViewModel;
@@ -21,7 +20,15 @@ namespace PortofolioKazhuro.Controllers
             _mail = mail;
             _logger = logger;
         }
+        private async Task<PartialViewResult> RenderListAsync()
+        {
+            var items = await _context.LanguageSkills
+                .Include(x => x.LanguageLevel)
+                .OrderBy(x => x.LanguageName)
+                .ToListAsync();
 
+            return PartialView("_LanguageList", items);
+        }
         public async Task<IActionResult> Index()
         {
             var model = new AdminViewModel
@@ -29,9 +36,12 @@ namespace PortofolioKazhuro.Controllers
                 Profile = await _context.Profiles.FirstOrDefaultAsync(),
                 educations = await _context.Educations.ToListAsync(),
                 Projects = await _context.Projects.ToListAsync(),
-                Skills = await _context.skillCategories.ToListAsync(),
+                Skills = await _context.SkillCategories.Include(s => s.Skills).ToListAsync(),
                 Certificates = await _context.Certificates.ToListAsync(),
-                experiences = await _context.Experiences.ToListAsync(),
+                experiences = await _context.WorkExperiences.ToListAsync(),
+                LanguageSkills = await _context.LanguageSkills
+                        .Include(ls => ls.LanguageLevel)
+                        .ToListAsync()
             };
             return View(model);
         }
@@ -98,11 +108,8 @@ namespace PortofolioKazhuro.Controllers
             }
 
             TempData["Success"] = telegramSent
-                ? "Предложение отправлено через Telegram."
-                : "Предложение не удалось отправить через Telegram.";
-
-            if (!mailSent)
-                TempData["MailWarning"] = "Email не был отправлен.";
+                ? "Предложение отправлено"
+                : "Предложение не удалось отправить";
 
             return RedirectToAction("Index");
         }

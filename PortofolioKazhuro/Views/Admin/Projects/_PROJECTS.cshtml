@@ -75,9 +75,11 @@
                                         }
 
                                         <div class="d-flex gap-2">
-                                            <a asp-action="EditProject" asp-route-id="@project.Id" class="btn btn-sm btn-outline-primary" title="Редактировать проект">
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    onclick="openEditProject(@project.Id)">
                                                 <i class="fas fa-edit"></i>
-                                            </a>
+                                            </button>
+
                                             <form asp-action="DeleteProject" method="post" class="d-inline" onsubmit="return confirm('Удалить проект?');">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@project.Id" />
@@ -101,6 +103,19 @@
                     <p>Нажмите «Добавить проект», чтобы начать</p>
                 </div>
             }
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editProjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать проект</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- partial будет загружен сюда -->
+            </div>
         </div>
     </div>
 </div>

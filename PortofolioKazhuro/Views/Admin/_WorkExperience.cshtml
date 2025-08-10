@@ -1,0 +1,107 @@
+﻿@model IEnumerable<WorkExperience>
+
+<div class="card mb-4 shadow-sm border-0 rounded-4">
+    <div class="card-header bg-light rounded-top-4 px-4 py-3 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-briefcase me-2 text-primary"></i>
+            <h5 class="mb-0 fw-semibold">Опыт работы</h5>
+        </div>
+        <button class="btn btn-success d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#workForm">
+            <i class="fas fa-plus me-2"></i>Добавить опыт
+        </button>
+    </div>
+
+    <div class="collapse" id="workForm">
+        <div class="card-body border-top px-4 py-3">
+            <form asp-action="AddWorkExperience" method="post" class="row g-4">
+                @Html.AntiForgeryToken()
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Компания</label>
+                    <input name="Company" class="form-control form-control-lg" placeholder="Название компании" required />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Должность</label>
+                    <input name="Position" class="form-control form-control-lg" placeholder="Должность" required />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Дата начала</label>
+                    <input type="date" name="DateStart" class="form-control form-control-lg" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Дата окончания</label>
+                    <input type="date" name="DateEnd" class="form-control form-control-lg" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Описание</label>
+                    <textarea name="Description" class="form-control form-control-lg" placeholder="Описание обязанностей и достижений"></textarea>
+                </div>
+
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-lg btn-success">
+                        <i class="fas fa-check me-2"></i>Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card-body px-4 pb-4">
+        @if (Model != null && Model.Any())
+        {
+            <div class="row g-4">
+                @foreach (var work in Model)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="fw-bold text-dark mb-2">
+                                    <i class="fas fa-building me-1 text-primary"></i> @work.Company
+                                </h6>
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-briefcase me-1"></i> @work.Position
+                                </p>
+                                @if (work.DateStart.HasValue || work.DateEnd.HasValue)
+                                {
+                                    <p class="text-muted mb-1">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        @work.DateStart?.ToString("yyyy") - @work.DateEnd?.ToString("yyyy")
+                                    </p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(work.Description))
+                                {
+                                    <p class="text-muted">@work.Description</p>
+                                }
+
+                                <div class="mt-auto d-flex justify-content-end gap-2">
+                                    <a asp-action="EditWorkExperience" asp-route-id="@work.Id" class="btn btn-sm btn-outline-primary" title="Редактировать">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form asp-action="DeleteWorkExperience" method="post" class="d-inline" onsubmit="return confirm('Удалить запись об опыте работы?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@work.Id" />
+                                        <button class="btn btn-sm btn-outline-danger" title="Удалить">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-briefcase fa-3x mb-3"></i>
+                <h5 class="fw-semibold">Записей об опыте работы пока нет</h5>
+                <p>Добавьте первую, чтобы начать</p>
+            </div>
+        }
+    </div>
+</div>

@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace PortofolioKazhuro.Migrations
 {
     /// <inheritdoc />
-    public partial class RabMail : Migration
+    public partial class AddModel : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -57,6 +59,19 @@ namespace PortofolioKazhuro.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "LanguageLevels",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LanguageLevels", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Profiles",
                 columns: table => new
                 {
@@ -76,7 +91,9 @@ namespace PortofolioKazhuro.Migrations
                     Email = table.Column<string>(type: "TEXT", nullable: true),
                     RabEmail = table.Column<string>(type: "TEXT", nullable: true),
                     RabEmailPass = table.Column<string>(type: "TEXT", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "TEXT", maxLength: 13, nullable: true)
+                    PhoneNumber = table.Column<string>(type: "TEXT", maxLength: 13, nullable: true),
+                    TelegramTokenBot = table.Column<string>(type: "TEXT", nullable: true),
+                    TelegramChatIdBot = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -101,7 +118,7 @@ namespace PortofolioKazhuro.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "skillCategories",
+                name: "SkillCategories",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -110,7 +127,7 @@ namespace PortofolioKazhuro.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_skillCategories", x => x.Id);
+                    table.PrimaryKey("PK_SkillCategories", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -128,6 +145,27 @@ namespace PortofolioKazhuro.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "LanguageSkills",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    LanguageName = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 250, nullable: true),
+                    LanguageLevelId = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LanguageSkills", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LanguageSkills_LanguageLevels_LanguageLevelId",
+                        column: x => x.LanguageLevelId,
+                        principalTable: "LanguageLevels",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Skills",
                 columns: table => new
                 {
@@ -141,12 +179,37 @@ namespace PortofolioKazhuro.Migrations
                 {
                     table.PrimaryKey("PK_Skills", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Skills_skillCategories_SkillCategoryId",
+                        name: "FK_Skills_SkillCategories_SkillCategoryId",
                         column: x => x.SkillCategoryId,
-                        principalTable: "skillCategories",
+                        principalTable: "SkillCategories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.InsertData(
+                table: "LanguageLevels",
+                columns: new[] { "Id", "Name" },
+                values: new object[,]
+                {
+                    { 1, "A1 — Beginner" },
+                    { 2, "A2 — Elementary" },
+                    { 3, "B1 — Intermediate" },
+                    { 4, "B2 — Upper Intermediate" },
+                    { 5, "C1 — Advanced" },
+                    { 6, "C2 — Proficient" },
+                    { 7, "Native" }
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LanguageSkills_LanguageLevelId",
+                table: "LanguageSkills",
+                column: "LanguageLevelId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LanguageSkills_LanguageName_LanguageLevelId",
+                table: "LanguageSkills",
+                columns: new[] { "LanguageName", "LanguageLevelId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Skills_SkillCategoryId",
@@ -167,6 +230,9 @@ namespace PortofolioKazhuro.Migrations
                 name: "Experiences");
 
             migrationBuilder.DropTable(
+                name: "LanguageSkills");
+
+            migrationBuilder.DropTable(
                 name: "Profiles");
 
             migrationBuilder.DropTable(
@@ -179,7 +245,10 @@ namespace PortofolioKazhuro.Migrations
                 name: "VisitorStats");
 
             migrationBuilder.DropTable(
-                name: "skillCategories");
+                name: "LanguageLevels");
+
+            migrationBuilder.DropTable(
+                name: "SkillCategories");
         }
     }
 }

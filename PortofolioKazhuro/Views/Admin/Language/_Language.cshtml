@@ -1,0 +1,167 @@
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
+@using PortofolioKazhuro.Models.Language
+@model IEnumerable<LanguageSkill>
+
+@{
+    ViewData["Title"] = "Языковые навыки";
+    var levels = ViewData["LanguageLevels"] as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+
+<div class="card mb-4 shadow-sm border-0 rounded-4">
+    <div class="card-header bg-light rounded-top-4 px-4 py-3 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-graduation-cap me-2 text-primary"></i>
+            <h5 class="mb-0 fw-semibold">Языки</h5>
+        </div>
+        <button class="btn btn-success d-flex align-items-center"
+                type="button"
+                data-bs-toggle="collapse" data-bs-target="#addLanguageForm" aria-expanded="false" aria-controls="addLanguageForm">
+            <i class="fas fa-plus me-2"></i>Добавить язык
+        </button>
+    </div>
+
+    <div class="collapse" id="addLanguageForm">
+        <div class="card card-body">
+            <form id="languageForm" asp-action="CreateLanguage" method="post" class="row g-3 needs-validation" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="col-md-6">
+                    <label class="form-label" for="LanguageName">Язык</label>
+                    <input id="LanguageName" name="LanguageName" class="form-control" required />
+                    <div class="invalid-feedback">Пожалуйста, укажите язык.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="LanguageLevelId">Уровень</label>
+                    <select id="LanguageLevelId" name="LanguageLevelId" class="form-select" required>
+                        @if (levels.Any())
+                        {
+                            foreach (var item in levels)
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                        else
+                        {
+                            <option disabled selected>Нет данных уровней</option>
+                        }
+                    </select>
+                    <div class="invalid-feedback">Пожалуйста, выберите уровень.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="Description">Описание</label>
+                    <textarea id="Description" name="Description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="col-12 text-end">
+                    <button class="btn btn-success" type="submit">
+                        <i class="fas fa-save me-1"></i> Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+<div id="languageList">
+        @await Html.PartialAsync("Language/_LanguageList", Model)
+</div>
+</div>
+@section Scripts {
+    <script>
+        (() => {
+            const skillListContainer = document.getElementById('languageList');
+            if (!skillListContainer) return;
+
+            const refreshList = (html) => skillListContainer.innerHTML = html;
+
+            const clearServerValidation = (form) => {
+                form.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
+                form.querySelectorAll('.invalid-feedback.server').forEach(e => e.remove());
+            };
+
+            const renderValidationErrors = (form, errors) => {
+                clearServerValidation(form);
+                Object.entries(errors || {}).forEach(([key, messages]) => {
+                    const input = form.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        input.classList.add('is-invalid');
+                        const feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback server';
+                        feedback.textContent = (messages || []).join(' ');
+                        input.insertAdjacentElement('afterend', feedback);
+                    }
+                });
+            };
+
+            const getTokenFrom = (form) => form.querySelector('input[name="__RequestVerificationToken"]')?.value
+                ?? document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                ?? '';
+
+            // Bootstrap валидация форм (клиентская)
+            const enableClientValidation = (form) => {
+                form.addEventListener('submit', e => {
+                    if (!form.checkValidity()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        form.classList.add('was-validated');
+                    }
+                }, false);
+            };
+
+            // Инициализация клиентской валидации для форм, которые есть на странице
+            document.querySelectorAll('form.needs-validation').forEach(enableClientValidation);
+
+            // Форма добавления языка (верхняя)
+            const createForm = document.getElementById('languageForm');
+            if (createForm) {
+                createForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    if (!createForm.checkValidity()) {
+                        createForm.classList.add('was-validated');
+                        return;
+                    }
+
+                    try {
+                        const formData = new FormData(createForm);
+                        const response = await fetch(createForm.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'RequestVerificationToken': getTokenFrom(createForm) }
+                        });
+
+                        if (response.status === 422) {
+                            const errors = await response.json();
+                            renderValidationErrors(createForm, errors);
+                            return;
+                        }
+
+                        if (!response.ok) {
+                            alert('Не удалось сохранить язык');
+                            return;
+                        }
+
+                        const html = await response.text();
+                        refreshList(html);
+
+                        createForm.reset();
+                        createForm.classList.remove('was-validated');
+                        clearServerValidation(createForm);
+
+                        const collapseEl = document.getElementById('addLanguageForm');
+                        if (collapseEl) {
+                            const collapseInstance = bootstrap.Collapse.getInstance(collapseEl)
+                                || new bootstrap.Collapse(collapseEl, { toggle: false });
+                            collapseInstance.hide();
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Сеть или сервер недоступны. Повторите попытку позже.');
+                    }
+                });
+            }
+
+            
+
+        })();
+    </script>
+}

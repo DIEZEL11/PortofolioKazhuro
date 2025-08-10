@@ -147,10 +147,52 @@
         .input-group .form-control[readonly]:hover {
             box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
         }
+    @@media print {
+        /* Убираем элементы, которые не нужны при печати */
+        .btn, .profile-glass-card:hover, [data-bs-toggle="modal"], .modal
+
+    {
+        display: none !important;
+    }
+
+    /* Превращаем кнопки контактов в текстовые ссылки */
+    .profile-contacts a::after {
+        content: " (" attr(href) ")";
+        font-size: 0.9rem;
+        color: #000;
+    }
+
+    .profile-contacts a {
+        background: none !important;
+        color: #000 !important;
+        padding: 0;
+        margin: 0;
+        text-decoration: underline;
+    }
+
+    /* Превращаем иконки соцсетей в текст с URL */
+    .social-links a::after {
+        content: " (" attr(href) ")";
+        font-size: 0.9rem;
+        color: #000;
+    }
+
+    .social-links a {
+        background: none !important;
+        color: #000 !important;
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        text-decoration: underline;
+        padding: 0;
+        margin-right: 8px;
+    }
+
+    }
 </style>
 
-<div class="container py-4">
-    <div class="profile-glass-card">
+<div class="container py-4 ">
+    <div class="profile-glass-card border-0 rounded-4 mb-4" ">
         <div>
             @if (Model.Profile.PhotoData != null)
             {
@@ -242,12 +284,20 @@
 
         </div>
     </div>
-
+    @await Html.PartialAsync("_WorkExperience", Model.experiences)
     @await Html.PartialAsync("_Education", Model.educations)
     @await Html.PartialAsync("_PROJECTS", Model.Projects)
     @await Html.PartialAsync("_Skills", Model.Skills)
+    @await Html.PartialAsync("Language/_Language", Model.LanguageSkills)
     @await Html.PartialAsync("_CertificatesPartial", Model.Certificates)
+
+    <div class="mt-3">
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Печать страницы
+        </button>
+    </div>
 </div>
+
 <!-- Модальное окно для предложения работы -->
 <div class="modal fade" id="jobOfferModal" tabindex="-1" aria-labelledby="jobOfferModalLabel" aria-hidden="true">
     <div class="modal-dialog">

@@ -84,13 +84,10 @@
                                 }
 
                                 <div class="mt-auto d-flex justify-content-end gap-2">
-                                    <form asp-action="EditEducation" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@edu.Id" />
-                                        <button class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditEducation(@edu.Id)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
                                     <form asp-action="DeleteEducation" method="post" class="d-inline" onsubmit="return confirm('Удалить запись об образовании?');">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@edu.Id" />
@@ -115,3 +112,31 @@
         }
     </div>
 </div>
+
+<div class="modal fade" id="editEduModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать образование</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editEduContent">
+
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        function openEditEducation(id) {
+            fetch(`/Admin/EditEducation?id=${id}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById("editEduContent").innerHTML = html;
+                    new bootstrap.Modal(document.getElementById("editEduModal")).show();
+                });
+        }
+    </script>
+}
+
+

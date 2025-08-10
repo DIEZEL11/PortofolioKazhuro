@@ -218,16 +218,17 @@
                 </div>
             </form>
         </div>
-    </div>
+    </div> 
 
     <!-- EDUCATION -->
-    @await Html.PartialAsync("_Education", Model.educations)
-
+    @await Html.PartialAsync("Education/_Education", Model.educations)
+    @await Html.PartialAsync("_WorkExperience", Model.experiences)
+    @await Html.PartialAsync("Language/_Language", Model.LanguageSkills)
     <!-- SKILLS -->
     @await Html.PartialAsync("_Skills", Model.Skills)
 
     <!-- PROJECTS -->
-    @await Html.PartialAsync("_Projects", Model.Projects)
+    @await Html.PartialAsync("Projects/_Projects", Model.Projects)
 
     <!-- CERTIFICATES -->
     @await Html.PartialAsync("_CertificatesPartial", Model.Certificates)
@@ -251,5 +252,29 @@
             icon.classList.remove('fa-eye-slash');
             icon.classList.add('fa-eye');
         }
+
     }
+
 </script>
+<script>
+        function openEditProject(id) {
+        $.get(`/Admin/EditProject?id=${id}`, function (data) {
+            $("#editProjectModal .modal-body").html(data);
+            $("#editProjectModal").modal("show");
+        });
+    }
+
+</script>
+@section Scripts {
+    <script>
+        window.openEditEducation = function(id) {
+            fetch(`/Admin/EditEducation?id=${id}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById("editEduContent").innerHTML = html;
+                    new bootstrap.Modal(document.getElementById("editEduModal")).show();
+                });
+        }
+
+    </script>
+}

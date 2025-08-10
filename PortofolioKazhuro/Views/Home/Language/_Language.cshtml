@@ -1,0 +1,29 @@
+﻿@using Microsoft.AspNetCore.Mvc.Rendering
+@using PortofolioKazhuro.Models.Language
+@model IEnumerable<LanguageSkill>
+
+@{
+    ViewData["Title"] = "Языковые навыки";
+    var levels = ViewData["LanguageLevels"] as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+@if (Model.Count() > 0)
+{
+<div class="card mb-4 shadow-sm border-0 rounded-4">
+    <div class="card-header bg-light rounded-top-4 px-4 py-3 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-graduation-cap me-2 text-primary"></i>
+            <h5 class="mb-0 fw-semibold">Языки</h5>
+        </div>
+        
+    </div>
+
+    
+
+
+<div id="languageList">
+            @await Html.PartialAsync("Language/_LanguageList", Model)
+</div>
+</div>
+}
+
+
