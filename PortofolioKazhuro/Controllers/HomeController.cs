@@ -50,56 +50,66 @@ namespace PortofolioKazhuro.Controllers
         public async Task<IActionResult> SubmitJobOffer(JobOfferViewModel offer)
         {
             if (offer == null || !ModelState.IsValid)
+            {
+                _logger.LogWarning("Получены некорректные данные для предложения работы.");
                 return BadRequest("Некорректные данные.");
+            }
 
             var profile = await _context.Profiles.FirstOrDefaultAsync();
             if (profile == null)
+            {
+                _logger.LogWarning("Профиль пользователя не найден.");
                 return NotFound("Профиль не найден.");
+            }
 
-            var message = $"""
-        🔔 *Новое предложение работы*
-
-        🏢 *Компания:* {offer.CompanyName}
-        📝 *Описание:* {offer.JobDescription}
-        💰 *Зарплата:* {offer.SalaryFrom}–{offer.SalaryTo} {offer.Currency}
-        📍 *Формат работы:* {offer.WorkFormat}
-        📅 *Срок отклика:* {offer.ResponseDeadline:dd.MM.yyyy}
-        📬 *Контакт:* {offer.ContactEmail}
-        """;
+            var message = GenerateJobOfferMessage(offer);
 
             bool telegramSent = false;
             bool mailSent = false;
+            bool telegramFileSent = false;
+
+            //try
+            //{
+            //    if (!string.IsNullOrWhiteSpace(profile.RabEmail) &&
+            //        !string.IsNullOrWhiteSpace(profile.RabEmailPass) &&
+            //        !string.IsNullOrWhiteSpace(profile.Email))
+            //    {
+            //        mailSent = await _mail.SendEmailAsync(
+            //            toEmail: profile.Email,
+            //            rabMail: profile.RabEmail,
+            //            rabMailPass: profile.RabEmailPass,
+            //            subject: "Новое предложение работы",
+            //            body: message
+            //        );
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogError(ex, "Ошибка при отправке email.");
+            //}
 
             try
             {
-                if (!string.IsNullOrWhiteSpace(profile.RabEmail) &&
-                    !string.IsNullOrWhiteSpace(profile.RabEmailPass) &&
-                    !string.IsNullOrWhiteSpace(profile.Email))
-                {
-                    mailSent = await _mail.SendEmailAsync(
-                         toEmail: profile.Email,
-                       rabMail: profile.RabEmail,
-                        rabMailPass: profile.RabEmailPass,
-                        subject: "Новое предложение работы",
-                        body: message
-                    );
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при отправке email.");
-            }
-
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(profile.TelegramTokenBot) &&
-                    !string.IsNullOrWhiteSpace(profile.TelegramChatIdBot))
+                if (!string.IsNullOrWhiteSpace(profile.TelegramTokenBot) && !string.IsNullOrWhiteSpace(profile.TelegramChatIdBot))
                 {
                     telegramSent = await _telegram.SendMessageAsync(
-                       botToken: profile.TelegramTokenBot,
+                        botToken: profile.TelegramTokenBot,
                         chatId: profile.TelegramChatIdBot,
                         message: message
                     );
+
+                    // Отправка файла в Telegram
+                    if (offer.Attachment != null && offer.Attachment.Length > 0)
+                    {
+                        using var stream = offer.Attachment.OpenReadStream();
+                        telegramFileSent = await _telegram.SendDocumentAsync(
+                            botToken: profile.TelegramTokenBot,
+                            chatId: profile.TelegramChatIdBot,
+                            fileStream: stream,
+                            fileName: offer.Attachment.FileName,
+                            caption: "Вложение к предложению работы"
+                        );
+                    }
                 }
             }
             catch (Exception ex)
@@ -107,13 +117,31 @@ namespace PortofolioKazhuro.Controllers
                 _logger.LogError(ex, "Ошибка при отправке сообщения в Telegram.");
             }
 
-            TempData["Success"] = telegramSent
-                ? "Предложение отправлено"
-                : "Предложение не удалось отправить";
+            TempData["Success"] = (telegramSent || mailSent || telegramFileSent)
+                ? "Предложение успешно отправлено."
+                : "Не удалось отправить предложение. Проверьте настройки.";
 
             return RedirectToAction("Index");
         }
 
+        private string GenerateJobOfferMessage(JobOfferViewModel offer)
+        {
+            var message =
+                $"🔔 *Новое предложение работы*\n" +
+                $"🏢 *Компания:* {offer.CompanyName}\n" +
+                $"📝 *Описание:* {offer.JobDescription}\n" +
+                $"💰 *Зарплата:* {offer.SalaryFrom}–{offer.SalaryTo} {offer.Currency}\n" +
+                $"📍 *Формат работы:* {offer.WorkFormat}\n" +
+                $"📅 *Срок отклика:* {offer.ResponseDeadline:dd.MM.yyyy}\n" +
+                $"📬 *Контакт:* {offer.ContactEmail}";
+
+            if (offer.Attachment != null && offer.Attachment.Length > 0)
+            {
+                message += $"\n📎 *Вложение:* {offer.Attachment.FileName}";
+            }
+
+            return message;
+        }
 
 
 

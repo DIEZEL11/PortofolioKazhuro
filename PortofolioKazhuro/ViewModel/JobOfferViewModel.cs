@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace PortofolioKazhuro.Models
+namespace PortofolioKazhuro.ViewModel
 {
     public class JobOfferViewModel
     {
@@ -9,6 +9,7 @@ namespace PortofolioKazhuro.Models
 
         [Required]
         public string JobDescription { get; set; }
+        public IFormFile? Attachment { get; set; }
 
         [Required, EmailAddress]
         public string ContactEmail { get; set; }

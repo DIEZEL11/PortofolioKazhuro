@@ -51,7 +51,7 @@ try
     builder.Services.AddControllersWithViews();
     builder.Services.AddHttpClient<TelegramService>();
     builder.Services.AddSingleton<MailService>();
-    builder.WebHost.UseUrls("https://0.0.0.0:6688");
+    //builder.WebHost.UseUrls("https://0.0.0.0:6688");
     var app = builder.Build();
     // Program.cs или Startup.cs
     //using (var scope = app.Services.CreateScope())

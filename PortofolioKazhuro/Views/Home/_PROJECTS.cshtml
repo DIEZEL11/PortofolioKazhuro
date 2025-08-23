@@ -5,43 +5,35 @@
 
 @if (Model.Count() > 0)
 {
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card shadow border-0 rounded-4 mb-4">
-            <div class="card-header bg-light rounded-top-4 d-flex justify-content-between align-items-center px-4 py-3">
-                <h5 class="mb-0 fw-bold d-flex align-items-center">
-                    <i class="fas fa-code text-primary me-2"></i> Мои проекты
-                </h5>
-            </div>
+    <div class="card mb-4 shadow-sm border-0 rounded-4 w-100">
 
-            <div class="card-body bg-white px-4">
-                <div class="row g-4">
-                    @foreach (var project in Model)
-                    {
-                        <div class="col-md-6 col-lg-4">
-                            <div class="card shadow-sm border-0 h-100 rounded-4">
-                                <div class="card-body d-flex flex-column">
-                                    <h5 class="fw-bold text-primary mb-2">@project.Title</h5>
-                                    <p class="text-muted flex-grow-1">@project.Description</p>
-
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        @if (!string.IsNullOrWhiteSpace(project.GitHubUrl))
-                                        {
-                                            <a href="@project.GitHubUrl" class="btn btn-sm btn-outline-dark" target="_blank" rel="noopener noreferrer">
-                                                <i class="fab fa-github me-1"></i> GitHub
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted small">Нет ссылки</span>
-                                        }
-                                    </div> <!-- Закрытие d-flex -->
-                                </div> <!-- Закрытие card-body -->
-                            </div> <!-- Закрытие внутренней card -->
-                        </div> <!-- Закрытие col -->
-                    }
-                </div> <!-- Закрытие row -->
-            </div> <!-- Закрытие card-body -->
-        </div> <!-- Закрытие card -->
-    </div> <!-- Закрытие внешней card -->
+        <div class="card-header bg-gradient bg-primary text-white rounded-top-4 py-4 px-4 d-flex align-items-center">
+            <i class="fas fa-code me-2"></i>
+            <h4 class="mb-0 fw-bold">Мои проекты</h4>
+        </div>
+        <div class="card-body bg-white px-4">
+            @foreach (var project in Model)
+            {
+                <div class="card shadow-sm border-0 h-100 rounded-4 mb-3 w-100">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="fw-bold text-primary mb-2">@project.Title</h5>
+                        <p class="text-muted flex-grow-1">@project.Description</p>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            @if (!string.IsNullOrWhiteSpace(project.GitHubUrl))
+                            {
+                                <a href="@project.GitHubUrl" class="btn btn-sm btn-outline-dark" target="_blank" rel="noopener noreferrer">
+                                    <i class="fab fa-github me-1"></i> GitHub
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Нет ссылки</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
 }
 
